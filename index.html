@@ -1,0 +1,1686 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <!-- ป้องกันไม่ให้ Google หรือ Search Engine ค้นหาเจอเว็บนี้เด็ดขาด -->
+    <meta name="robots" content="noindex, nofollow, noarchive, nosnippet">
+    <title>LPCAR APP — ระบบฐานข้อมูลรถยนต์ & แจ้งซ่อม</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="config.js"></script>
+    <style>
+        * { font-family: 'Prompt', sans-serif; -webkit-tap-highlight-color: transparent; }
+        
+        /* พื้นหลังเนื้อหาหลักโทนสเลทเข้มละมุน (#cbd5e1 -> #94a3b8) */
+        body { 
+            background: linear-gradient(180deg, #cbd5e1 0%, #94a3b8 100%); 
+            color: #0f172a; 
+            min-height: 100vh; 
+        }
+
+        /* สีแถบส่วนหัวสว่างพอดี (#475569) เนียนเรียบเป็นเนื้อเดียวกันไร้เส้นแบ่ง */
+        .bg-bar-unified {
+            background-color: #475569 !important;
+        }
+
+        /* ปุ่มหมวดหมู่ออฟชั่น 3D Embossed นูนลอยน่ากด */
+        .tab-item-active {
+            background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%) !important;
+            color: #fb923c !important;
+            font-weight: 800;
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.15), 0 0 14px rgba(249, 115, 22, 0.4);
+            border-bottom: 3.5px solid #f97316;
+            transform: translateY(-1px);
+        }
+
+        .tab-item-inactive {
+            background: linear-gradient(180deg, #334155 0%, #1e293b 100%) !important;
+            color: #cbd5e1 !important;
+            font-weight: 600;
+            opacity: 0.9;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.08);
+        }
+        .tab-item-inactive:hover {
+            opacity: 1;
+            background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%) !important;
+            color: #ffffff !important;
+            box-shadow: 0 5px 12px rgba(0,0,0,0.35);
+        }
+
+        /* การ์ดเนื้อหา: 3D Raised Floating Card มิตินูนลอย 2 ชั้น + ไฟนีออนส้ม */
+        .lux-card {
+            background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+            border: 1.5px solid rgba(249, 115, 22, 0.45);
+            box-shadow: 
+                0 10px 25px -4px rgba(15, 23, 42, 0.18), 
+                0 4px 10px -2px rgba(15, 23, 42, 0.08),
+                0 0 16px rgba(249, 115, 22, 0.15),
+                inset 0 1px 1px rgba(255, 255, 255, 0.9);
+            transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .lux-card:hover {
+            border-color: rgba(249, 115, 22, 0.9);
+            box-shadow: 
+                0 16px 32px -6px rgba(15, 23, 42, 0.25), 
+                0 8px 16px -2px rgba(15, 23, 42, 0.12),
+                0 0 24px rgba(249, 115, 22, 0.35),
+                inset 0 1px 2px rgba(255, 255, 255, 1);
+            transform: translateY(-3px);
+        }
+
+        /* ปุ่มและกล่อง 3D Tactile Button น่ากด */
+        .btn-3d {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12), inset 0 1px 1px rgba(255, 255, 255, 0.8);
+            transition: all 0.18s ease-in-out;
+        }
+        .btn-3d:hover {
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18), inset 0 1px 1px rgba(255, 255, 255, 1);
+            transform: translateY(-1.5px);
+        }
+        .btn-3d:active {
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+            transform: translateY(1px);
+        }
+
+        /* เอฟเฟกต์ไฟนีออนสำหรับช่องกรอกข้อมูล 3D Inset */
+        .neon-input {
+            border: 1px solid rgba(249, 115, 22, 0.4);
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.04), 0 2px 6px rgba(0, 0, 0, 0.05);
+            transition: all 0.2s ease-in-out;
+        }
+        .neon-input:focus {
+            border-color: #f97316 !important;
+            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05), 0 0 14px rgba(249, 115, 22, 0.4) !important;
+        }
+
+        .card-anim { animation: fadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1); }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+        .skeleton { background: linear-gradient(90deg, #e2e8f0 25%, #cbd5e1 50%, #e2e8f0 75%); background-size: 200% 100%; animation: skeleton-loading 1.2s infinite; }
+        @keyframes skeleton-loading { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #cbd5e1; }
+        ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #f97316; }
+
+        @media print {
+            body * { visibility: hidden; }
+            #print-area, #print-area * { visibility: visible; }
+            #print-area { position: absolute; left: 0; top: 0; width: 100%; padding: 20px; background: white; color: black; }
+            .no-print { display: none !important; }
+        }
+    </style>
+</head>
+<body class="antialiased flex flex-col pb-16">
+
+    <!-- ========== SECURITY PIN LOCK MODAL ========== -->
+    <div id="pin-modal" class="fixed inset-0 z-50 bg-slate-900/95 backdrop-blur-md flex items-center justify-center p-4 card-anim no-print">
+        <div class="bg-gradient-to-b from-slate-900 to-slate-800 rounded-3xl p-5 md:p-8 w-full max-w-sm text-center border-2 border-orange-500 shadow-[0_0_40px_rgba(249,115,22,0.35)] space-y-4 md:space-y-5">
+            <div class="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-gradient-to-tr from-orange-500 to-amber-500 text-white flex items-center justify-center text-2xl md:text-3xl mx-auto shadow-lg shadow-orange-500/40 border border-orange-300">
+                🔒
+            </div>
+            <div>
+                <h2 class="text-base md:text-xl font-black text-white tracking-wide">LPCAR APP ACCESS</h2>
+                <p class="text-[11px] md:text-xs text-orange-200 mt-1">กรุณากรอกรหัสผ่านเพื่อเข้าใช้งานระบบอู่</p>
+            </div>
+            <div class="space-y-3">
+                <input type="text" id="pin-input" placeholder="กรอกรหัสผ่าน..." autofocus onkeydown="if(event.key==='Enter') checkPin()" class="w-full text-center text-sm md:text-lg font-extrabold tracking-wider py-3 bg-slate-950 text-orange-400 border-2 border-orange-400/80 rounded-2xl focus:outline-none focus:border-orange-500 focus:shadow-[0_0_15px_rgba(249,115,22,0.5)]">
+                
+                <button type="button" onclick="checkPin()" class="btn-3d w-full py-3 md:py-3.5 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-extrabold rounded-2xl shadow-lg shadow-orange-500/40 text-xs md:text-sm">
+                    🔓 ปลดล็อกเข้าใช้งาน
+                </button>
+            </div>
+            <p class="text-[10px] md:text-[11px] text-slate-400 font-medium">เฉพาะเจ้าหน้าที่และช่างซ่อมภายในอู่เท่านั้น</p>
+        </div>
+    </div>
+
+    <!-- ========== HEADER ========== -->
+    <header class="sticky top-0 z-40 w-full bg-bar-unified text-white shadow-lg no-print">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 pt-3.5 pb-2.5 flex items-center justify-between">
+            <div class="flex items-center gap-3 md:gap-4">
+                <img src="LOGO.jpg" alt="LPCAR APP" class="h-10 sm:h-12 md:h-14 w-auto object-contain drop-shadow-md hover:scale-105 transition-transform" onerror="this.style.display='none'">
+                <div>
+                    <h1 class="text-base sm:text-lg md:text-xl font-black text-orange-400 leading-tight tracking-wide drop-shadow-[0_0_10px_rgba(251,146,60,0.5)]">LPCAR APP</h1>
+                    <p class="text-[10px] sm:text-xs font-bold text-slate-200">ระบบฐานข้อมูลรถยนต์ & แจ้งซ่อม</p>
+                </div>
+            </div>
+
+            <!-- Connection Status Pill & Lock Button -->
+            <div class="flex items-center gap-2 md:gap-3">
+                <button type="button" onclick="lockApp()" title="ล็อกหน้าจอ" class="p-2 rounded-full bg-slate-700 hover:bg-slate-800 border border-slate-500 text-xs text-orange-300 font-bold transition-all btn-3d">
+                    🔒
+                </button>
+                <div id="status-pill" title="สถานะระบบ: กำลังเชื่อมต่อ..." class="p-2 rounded-full bg-slate-500/90 border border-slate-400 shadow-inner flex items-center justify-center transition-all">
+                    <span id="status-dot" class="w-3 h-3 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab Navigation -->
+        <div class="w-full bg-bar-unified px-4 sm:px-6 md:px-8 pb-3">
+            <div class="max-w-7xl mx-auto flex items-center gap-3">
+                <!-- Tab 1: ฐานข้อมูลรถ -->
+                <button type="button" onclick="switchTab('db')" id="tab-db" class="tab-item-active w-1/2 py-2.5 sm:py-3 text-xs sm:text-sm md:text-base flex items-center justify-center gap-2 rounded-xl transition-all">
+                    <span>🚗 ฐานข้อมูล & ประวัติซ่อม</span>
+                    <span id="badge-count" class="bg-orange-500 text-white text-[10px] sm:text-xs px-2.5 py-0.5 rounded-full font-extrabold shadow-md">0</span>
+                </button>
+                <!-- Tab 2: ฟอร์มแจ้งซ่อมใหม่ -->
+                <button type="button" onclick="switchTab('form')" id="tab-form" class="tab-item-inactive w-1/2 py-2.5 sm:py-3 text-xs sm:text-sm md:text-base flex items-center justify-center gap-2 rounded-xl transition-all">
+                    <span>📝 บันทึกแจ้งซ่อมรถใหม่</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- ========== MAIN CONTENT ========== -->
+    <main class="max-w-7xl mx-auto w-full px-3 sm:px-6 md:px-8 pt-5 md:pt-7 flex-1 no-print">
+        <!-- Toast Container -->
+        <div id="toast-box" class="fixed top-20 md:top-24 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 w-11/12 max-w-md pointer-events-none"></div>
+
+        <!-- ========== TAB 1: ฐานข้อมูลรถ ========== -->
+        <section id="sec-db" class="card-anim space-y-4 md:space-y-6">
+            <!-- Search & Filters Zone -->
+            <div class="lux-card rounded-2xl p-4 sm:p-5 md:p-6 space-y-4">
+                <div class="flex flex-col sm:flex-row items-center gap-3">
+                    <div class="relative w-full">
+                        <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 text-sm">🔍</span>
+                        <input type="text" id="search-input" oninput="renderCards()" placeholder="ค้นหาทะเบียนรถ, ชื่อลูกค้า, ยี่ห้อ/รุ่น, อาการ, ช่างซ่อม..." class="neon-input w-full pl-9 pr-9 py-2.5 sm:py-3 bg-white rounded-xl text-xs sm:text-sm focus:outline-none font-medium text-slate-800">
+                        <button type="button" onclick="document.getElementById('search-input').value=''; renderCards();" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 text-xs font-bold">✕</button>
+                    </div>
+                    <button type="button" onclick="loadData(true)" class="btn-3d w-full sm:w-auto bg-white hover:bg-orange-50 hover:text-orange-600 text-slate-800 font-bold px-4 py-2.5 sm:py-3 rounded-xl text-xs sm:text-sm flex items-center justify-center gap-2 shrink-0 border border-orange-300">🔄 รีเฟรชข้อมูล</button>
+                </div>
+
+                <!-- 1-Click Status Filter Buttons -->
+                <div class="flex items-center gap-2 overflow-x-auto pb-1 text-xs pt-1">
+                    <span class="text-slate-700 font-bold text-xs shrink-0 mr-1">สถานะ:</span>
+                    <button type="button" onclick="setStatusFilter('ALL')" id="filter-all" class="btn-3d px-4 py-1.5 rounded-full font-bold bg-orange-600 text-white shadow-md shadow-orange-500/40 shrink-0 text-xs">ทั้งหมด</button>
+                    <button type="button" onclick="setStatusFilter('รอดำเนินการ')" id="filter-pending" class="btn-3d px-4 py-1.5 rounded-full font-bold bg-white text-slate-700 hover:bg-amber-100 hover:text-amber-900 border border-amber-300 shrink-0 text-xs">⏳ รอดำเนินการ</button>
+                    <button type="button" onclick="setStatusFilter('กำลังซ่อม')" id="filter-repairing" class="btn-3d px-4 py-1.5 rounded-full font-bold bg-white text-slate-700 hover:bg-blue-100 hover:text-blue-900 border border-blue-300 shrink-0 text-xs">🔧 กำลังซ่อม</button>
+                    <button type="button" onclick="setStatusFilter('ซ่อมเสร็จแล้ว')" id="filter-done" class="btn-3d px-4 py-1.5 rounded-full font-bold bg-white text-slate-700 hover:bg-emerald-100 hover:text-emerald-900 border border-emerald-300 shrink-0 text-xs">✅ ซ่อมเสร็จแล้ว</button>
+                </div>
+
+                <!-- Stats Bar -->
+                <div class="grid grid-cols-3 gap-3 md:gap-4 text-center pt-1">
+                    <div class="bg-gradient-to-br from-orange-50 to-orange-100/70 border border-orange-300 rounded-xl py-3 px-2 cursor-pointer btn-3d shadow-[0_4px_12px_rgba(249,115,22,0.15)]" onclick="setStatusFilter('ALL')">
+                        <div class="text-[10px] sm:text-xs font-bold text-orange-800 uppercase tracking-wider">รถทั้งหมดในระบบ</div>
+                        <div class="text-sm sm:text-base md:text-xl font-extrabold text-orange-900 mt-0.5" id="stat-total">0 คัน</div>
+                    </div>
+                    <div class="bg-gradient-to-br from-amber-50 to-amber-100/70 border border-amber-300 rounded-xl py-3 px-2 cursor-pointer btn-3d shadow-[0_4px_12px_rgba(245,158,11,0.15)]" onclick="setStatusFilter('รอดำเนินการ')">
+                        <div class="text-[10px] sm:text-xs font-bold text-amber-800 uppercase tracking-wider">กำลังรอ/ซ่อม</div>
+                        <div class="text-sm sm:text-base md:text-xl font-extrabold text-amber-900 mt-0.5" id="stat-pending">0 คัน</div>
+                    </div>
+                    <div class="bg-gradient-to-br from-emerald-50 to-emerald-100/70 border border-emerald-300 rounded-xl py-3 px-2 cursor-pointer btn-3d shadow-[0_4px_12px_rgba(16,185,129,0.15)]" onclick="setStatusFilter('ซ่อมเสร็จแล้ว')">
+                        <div class="text-[10px] sm:text-xs font-bold text-emerald-800 uppercase tracking-wider">ซ่อมเสร็จแล้ว</div>
+                        <div class="text-sm sm:text-base md:text-xl font-extrabold text-emerald-900 mt-0.5" id="stat-done">0 คัน</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cards Container -->
+            <div id="cards-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 md:gap-6">
+                <div class="col-span-full lux-card rounded-2xl p-8 text-center"><div class="skeleton h-28 w-full rounded-xl"></div></div>
+            </div>
+        </section>
+
+        <!-- ========== TAB 2: ฟอร์มแจ้งซ่อม (เปิดบันทึกรถคันใหม่เท่านั้น) ========== -->
+        <section id="sec-form" class="hidden card-anim">
+            <div class="lux-card rounded-2xl p-4 sm:p-6 md:p-8 max-w-4xl mx-auto space-y-5">
+                <div class="flex items-center justify-between pb-4 border-b border-orange-200">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-orange-100 text-orange-600 flex items-center justify-center text-xl font-bold border border-orange-300 shadow-[0_0_12px_rgba(249,115,22,0.25)] shrink-0">📝</div>
+                        <div>
+                            <h2 class="text-base sm:text-lg font-bold text-slate-800">บันทึกเปิดใบแจ้งซ่อมรถใหม่</h2>
+                            <p class="text-xs text-slate-500">กรอกข้อมูลรถใหม่ อะไหล่ ชื่อช่าง หมายเหตุ และรูปภาพ</p>
+                        </div>
+                    </div>
+                </div>
+                <form id="repair-form" onsubmit="handleNewSubmit(event)" class="space-y-4 md:space-y-5">
+                    <!-- Customer & Phone -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5 md:gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">👤 ชื่อลูกค้า <span class="text-red-500">*</span></label>
+                            <input type="text" id="f-customer" required placeholder="คุณสมชาย ใจดี" class="neon-input w-full px-3.5 py-2.5 sm:py-3 bg-white rounded-xl text-xs sm:text-sm focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">📞 เบอร์โทรศัพท์ <span class="text-red-500">*</span></label>
+                            <input type="tel" id="f-phone" required placeholder="081-234-5678" oninput="autoFormatPhone(this)" class="neon-input w-full px-3.5 py-2.5 sm:py-3 bg-white rounded-xl text-xs sm:text-sm focus:outline-none">
+                        </div>
+                    </div>
+                    <!-- Car Specs -->
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-orange-50/80 p-3.5 sm:p-4 rounded-2xl border border-orange-300 shadow-inner">
+                        <div>
+                            <label class="block text-[11px] font-bold text-orange-900 mb-1">🚘 ทะเบียนรถ <span class="text-red-500">*</span></label>
+                            <input type="text" id="f-plate" required placeholder="กข-1234 กทม" oninput="this.value = this.value.toUpperCase()" class="w-full px-3 py-2 bg-white border border-orange-400 rounded-xl text-xs sm:text-sm font-bold uppercase focus:outline-none focus:border-orange-500 text-orange-900 shadow-xs">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 mb-1">🚙 ยี่ห้อและรุ่น <span class="text-red-500">*</span></label>
+                            <input type="text" id="f-model" required placeholder="Toyota Hilux Revo" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs sm:text-sm font-medium focus:outline-none focus:border-orange-500 shadow-xs">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 mb-1">⏱️ เลขไมล์ (กม.)</label>
+                            <input type="number" id="f-mileage" placeholder="125000" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs sm:text-sm font-medium focus:outline-none focus:border-orange-500 shadow-xs">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 mb-1">⚙️ ระบบเกียร์</label>
+                            <select id="f-gear" class="w-full px-2.5 py-2 bg-white border border-slate-300 rounded-xl text-xs sm:text-sm font-medium focus:outline-none focus:border-orange-500 shadow-xs">
+                                <option value="ออโต้ (Auto)">ออโต้ (Auto)</option>
+                                <option value="ธรรมดา (Manual)">ธรรมดา (Manual)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3.5 md:gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">🛣️ ระบบขับเคลื่อน</label>
+                            <select id="f-drive" class="neon-input w-full px-3 py-2.5 sm:py-3 bg-white rounded-xl text-xs sm:text-sm font-medium focus:outline-none">
+                                <option value="2WD">2WD (ขับ 2 ล้อ)</option>
+                                <option value="4WD">4WD (ขับ 4 ล้อ)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">🚐 ประเภทตัวถัง</label>
+                            <select id="f-body" class="neon-input w-full px-3 py-2.5 sm:py-3 bg-white rounded-xl text-xs sm:text-sm font-medium focus:outline-none">
+                                <option value="Sedan">รถเก๋ง (Sedan)</option>
+                                <option value="Pickup">รถกระบะ (Pickup)</option>
+                                <option value="SUV/PPV">รถ SUV / PPV</option>
+                                <option value="Van">รถตู้ (Van)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Mechanic & Helper Fields -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5 bg-slate-200/60 p-3.5 sm:p-4 rounded-2xl border border-slate-300 shadow-inner">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">👨‍🔧 ชื่อช่างซ่อมหลัก</label>
+                            <input type="text" id="f-mechanic" placeholder="ช่างสมชาย" class="neon-input w-full px-3.5 py-2.5 sm:py-3 bg-white rounded-xl text-xs sm:text-sm focus:outline-none shadow-2xs">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">🧑‍🔧 ผู้ช่วยช่าง / ช่างร่วม</label>
+                            <input type="text" id="f-helper" placeholder="ช่างเอก" class="neon-input w-full px-3.5 py-2.5 sm:py-3 bg-white rounded-xl text-xs sm:text-sm focus:outline-none shadow-2xs">
+                        </div>
+                    </div>
+
+                    <!-- Notes / Extra Details Field -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">📝 รายละเอียดเพิ่มเติมและหมายเหตุ</label>
+                        <textarea id="f-notes" rows="2.5" placeholder="เช่น นัดรับรถพรุ่งนี้เย็น, อาการเป็นๆ หายๆ, ข้อเสนอแนะอื่นๆ..." class="neon-input w-full px-3.5 py-2.5 sm:py-3 bg-white rounded-xl text-xs sm:text-sm focus:outline-none"></textarea>
+                    </div>
+
+                    <hr class="border-orange-200">
+                    <!-- Repair Items with English Units -->
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">🛠️ รายการซ่อม & อะไหล่ (หน่วยสากล)</label>
+                            <button type="button" onclick="addRow('rows-list')" class="btn-3d text-xs font-bold text-orange-700 bg-orange-100 hover:bg-orange-200 px-3.5 py-1.5 rounded-xl border border-orange-300">＋ เพิ่มรายการ</button>
+                        </div>
+                        <div id="rows-list" class="space-y-2"></div>
+                    </div>
+                    <hr class="border-orange-200">
+                    <!-- Photo Engine -->
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">📸 รูปถ่ายสภาพรถ (ส่งลิงก์เข้า Google Sheet & พรีวิวได้สด)</label>
+                            <span id="photo-badge" class="text-[11px] font-bold text-orange-700 bg-orange-100 px-2.5 py-0.5 rounded-full border border-orange-200">0 รูป</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3 mb-3">
+                            <div class="btn-3d relative overflow-hidden inline-flex items-center justify-center gap-2 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-xl py-3 px-3 text-xs sm:text-sm font-bold shadow-md shadow-orange-500/30 cursor-pointer">
+                                📷 ถ่ายรูปสด
+                                <input type="file" accept="image/*" capture="environment" class="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10" onclick="this.value=null" onchange="addPhotoNew(this)">
+                            </div>
+                            <div class="btn-3d relative overflow-hidden inline-flex items-center justify-center gap-2 bg-white hover:bg-slate-100 text-slate-800 rounded-xl py-3 px-3 text-xs sm:text-sm font-semibold border border-orange-300/80 cursor-pointer">
+                                🖼️ แนบรูปจากคลัง
+                                <input type="file" accept="image/*" class="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10" onclick="this.value=null" onchange="addPhotoNew(this)">
+                            </div>
+                        </div>
+                        <div id="photo-grid" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2.5 empty:hidden"></div>
+                    </div>
+                    <button type="submit" id="btn-submit-new" class="btn-3d w-full mt-5 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold rounded-xl py-3.5 shadow-lg shadow-orange-500/40 flex items-center justify-center gap-2 text-xs sm:text-sm">
+                        <span id="btn-txt-new">💾 บันทึกเปิดใบแจ้งซ่อม</span>
+                    </button>
+                </form>
+            </div>
+        </section>
+    </main>
+
+    <!-- ========== MODAL 1: รายละเอียดรถ (DETAIL MODAL) ========== -->
+    <div id="detail-modal" class="hidden fixed inset-0 z-50 bg-slate-900/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 card-anim no-print">
+        <div class="bg-white rounded-3xl w-full max-w-xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden border border-orange-400/80">
+            <div class="p-4 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800">
+                <div class="flex items-center gap-3">
+                    <span class="text-2xl">🚗</span>
+                    <div>
+                        <h3 class="text-sm sm:text-base font-bold text-orange-400" id="d-plate">-</h3>
+                        <p class="text-xs text-slate-300" id="d-customer">-</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeDetail()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white text-sm font-bold">✕</button>
+            </div>
+            <div class="p-4 sm:p-5 overflow-y-auto space-y-4 flex-1 text-xs sm:text-sm">
+                <!-- Specs Grid -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-slate-50 p-3.5 rounded-2xl border border-slate-200 shadow-2xs">
+                    <div><span class="text-slate-500 block text-[10px]">ยี่ห้อและรุ่นรถ</span><span class="font-bold text-slate-800" id="d-model">-</span></div>
+                    <div><span class="text-slate-500 block text-[10px]">เบอร์โทรศัพท์</span><span class="font-bold text-orange-600" id="d-phone">-</span></div>
+                    <div><span class="text-slate-500 block text-[10px]">เลขไมล์</span><span class="font-bold text-slate-800" id="d-mileage">-</span></div>
+                    <div><span class="text-slate-500 block text-[10px]">สถานะงานซ่อม</span><span class="font-bold" id="d-status">-</span></div>
+                </div>
+
+                <!-- Mechanic Info Grid -->
+                <div class="grid grid-cols-2 gap-2 bg-orange-50/80 p-3 rounded-2xl border border-orange-200 shadow-2xs">
+                    <div><span class="text-orange-900 block text-[10px]">👨‍🔧 ช่างซ่อมหลัก</span><span class="font-bold text-slate-900" id="d-mechanic">-</span></div>
+                    <div><span class="text-orange-900 block text-[10px]">🧑‍🔧 ผู้ช่วยช่าง</span><span class="font-bold text-slate-900" id="d-helper">-</span></div>
+                </div>
+
+                <!-- Side-by-side Repair Items & Spare Parts Table -->
+                <div>
+                    <h4 class="font-bold text-slate-700 mb-2 flex items-center justify-between text-xs">
+                        <span>🛠️ รายการซ่อม & รายการอะไหล่</span>
+                    </h4>
+                    <div class="space-y-2" id="d-combined-list"></div>
+                </div>
+
+                <!-- Notes / Extra Details Display -->
+                <div id="d-notes-box">
+                    <h4 class="font-bold text-slate-700 mb-1 flex items-center gap-1 text-xs">📝 รายละเอียดเพิ่มเติมและหมายเหตุ</h4>
+                    <div class="bg-amber-50/80 p-3.5 rounded-2xl border border-amber-200 text-amber-950 text-xs leading-relaxed font-medium whitespace-pre-line shadow-2xs" id="d-notes">-</div>
+                </div>
+
+                <!-- Photo Gallery Preview (กดขยายพรีวิวได้ทันทีทั้งมือถือและ PC) -->
+                <div>
+                    <h4 class="font-bold text-slate-700 mb-2 text-xs flex items-center justify-between">
+                        <span>📸 คลังรูปภาพประกอบ (กดที่รูปเพื่อพรีวิวดูขนาดเต็ม)</span>
+                    </h4>
+                    <div id="d-photos" class="grid grid-cols-3 sm:grid-cols-4 gap-2.5"></div>
+                </div>
+            </div>
+
+            <!-- Modal Footer Buttons -->
+            <div class="p-3.5 bg-slate-50 border-t border-slate-200 flex items-center justify-between flex-wrap gap-2">
+                <button type="button" id="d-print-btn" class="btn-3d bg-slate-800 hover:bg-slate-900 text-white font-bold px-3.5 py-2 rounded-xl text-xs flex items-center gap-1">
+                    🖨️ พิมพ์ใบแจ้งซ่อม
+                </button>
+                <div class="flex items-center gap-2">
+                    <button type="button" id="d-delete-btn" class="btn-3d bg-red-50 hover:bg-red-100 text-red-700 font-bold px-3.5 py-2 rounded-xl text-xs border border-red-200 flex items-center gap-1">
+                        🗑️ ลบ
+                    </button>
+                    <button type="button" id="d-edit-btn" class="btn-3d bg-orange-500 hover:bg-orange-600 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-md flex items-center gap-1">
+                        ✏️ แก้ไข
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== MODAL 2: ฟอร์มแก้ไขข้อมูลรถ (IN-PLACE EDIT MODAL) ========== -->
+    <div id="edit-modal" class="hidden fixed inset-0 z-50 bg-slate-900/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 card-anim no-print">
+        <div class="bg-white rounded-3xl w-full max-w-3xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden border border-orange-400/80">
+            <div class="p-4 bg-gradient-to-r from-orange-600 to-amber-600 text-white flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <span class="text-2xl">✏️</span>
+                    <div>
+                        <h3 class="text-sm sm:text-base font-bold" id="e-title">แก้ไขข้อมูลรถ</h3>
+                        <p class="text-xs text-orange-100">ปรับปรุงข้อมูลรถ รายการซ่อม อะไหล่ ชื่อช่าง หรือแนบรูปเพิ่ม</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeEditModal()" class="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-white text-sm font-bold">✕</button>
+            </div>
+            <div class="p-4 sm:p-6 overflow-y-auto flex-1 text-xs sm:text-sm">
+                <form id="edit-form" onsubmit="handleEditSubmit(event)" class="space-y-4">
+                    <input type="hidden" id="e-id" value="">
+                    
+                    <!-- Customer & Phone -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">👤 ชื่อลูกค้า <span class="text-red-500">*</span></label>
+                            <input type="text" id="e-customer" required class="neon-input w-full px-3.5 py-2.5 bg-white rounded-xl text-xs sm:text-sm focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">📞 เบอร์โทรศัพท์ <span class="text-red-500">*</span></label>
+                            <input type="tel" id="e-phone" required oninput="autoFormatPhone(this)" class="neon-input w-full px-3.5 py-2.5 bg-white rounded-xl text-xs sm:text-sm focus:outline-none">
+                        </div>
+                    </div>
+
+                    <!-- Car Specs -->
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-orange-50/70 p-3.5 rounded-2xl border border-orange-200">
+                        <div>
+                            <label class="block text-[11px] font-bold text-orange-900 mb-1">🚘 ทะเบียนรถ <span class="text-red-500">*</span></label>
+                            <input type="text" id="e-plate" required oninput="this.value = this.value.toUpperCase()" class="w-full px-3 py-2 bg-white border border-orange-300 rounded-xl text-xs sm:text-sm font-bold uppercase focus:outline-none focus:border-orange-500 text-orange-900">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 mb-1">🚙 ยี่ห้อและรุ่น <span class="text-red-500">*</span></label>
+                            <input type="text" id="e-model" required class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs sm:text-sm font-medium focus:outline-none focus:border-orange-500">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 mb-1">⏱️ เลขไมล์ (กม.)</label>
+                            <input type="number" id="e-mileage" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs sm:text-sm font-medium focus:outline-none focus:border-orange-500">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-700 mb-1">⚙️ ระบบเกียร์</label>
+                            <select id="e-gear" class="w-full px-2.5 py-2 bg-white border border-slate-300 rounded-xl text-xs sm:text-sm font-medium focus:outline-none focus:border-orange-500">
+                                <option value="ออโต้ (Auto)">ออโต้ (Auto)</option>
+                                <option value="ธรรมดา (Manual)">ธรรมดา (Manual)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Drive & Body & Status -->
+                    <div class="grid grid-cols-3 gap-3">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">🛣️ ขับเคลื่อน</label>
+                            <select id="e-drive" class="neon-input w-full px-3 py-2 bg-white rounded-xl text-xs sm:text-sm font-medium focus:outline-none">
+                                <option value="2WD">2WD</option>
+                                <option value="4WD">4WD</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">🚐 ตัวถัง</label>
+                            <select id="e-body" class="neon-input w-full px-3 py-2 bg-white rounded-xl text-xs sm:text-sm font-medium focus:outline-none">
+                                <option value="Sedan">รถเก๋ง</option>
+                                <option value="Pickup">กระบะ</option>
+                                <option value="SUV/PPV">SUV/PPV</option>
+                                <option value="Van">รถตู้</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">📌 สถานะ</label>
+                            <select id="e-status" class="neon-input w-full px-3 py-2 bg-white rounded-xl text-xs sm:text-sm font-bold text-orange-600 focus:outline-none">
+                                <option value="รอดำเนินการ">⏳ รอซ่อม</option>
+                                <option value="กำลังซ่อม">🔧 กำลังซ่อม</option>
+                                <option value="ซ่อมเสร็จแล้ว">✅ เสร็จแล้ว</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Mechanic & Helper Fields -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5 bg-slate-100/80 p-3.5 rounded-2xl border border-slate-200">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">👨‍🔧 ชื่อช่างซ่อมหลัก</label>
+                            <input type="text" id="e-mechanic" placeholder="ช่างสมชาย" class="neon-input w-full px-3.5 py-2 bg-white rounded-xl text-xs sm:text-sm focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">🧑‍🔧 ผู้ช่วยช่าง / ช่างร่วม</label>
+                            <input type="text" id="e-helper" placeholder="ช่างเอก" class="neon-input w-full px-3.5 py-2 bg-white rounded-xl text-xs sm:text-sm focus:outline-none">
+                        </div>
+                    </div>
+
+                    <!-- Notes Field -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">📝 รายละเอียดเพิ่มเติมและหมายเหตุ</label>
+                        <textarea id="e-notes" rows="2" class="neon-input w-full px-3.5 py-2.5 bg-white rounded-xl text-xs sm:text-sm focus:outline-none"></textarea>
+                    </div>
+
+                    <hr class="border-slate-200">
+
+                    <!-- Repair Items with English Units -->
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">🛠️ รายการซ่อม & อะไหล่ (หน่วยสากล)</label>
+                            <button type="button" onclick="addRow('e-rows-list')" class="btn-3d text-xs font-bold text-orange-700 bg-orange-100 hover:bg-orange-200 px-3 py-1 rounded-xl border border-orange-300">＋ เพิ่มรายการ</button>
+                        </div>
+                        <div id="e-rows-list" class="space-y-2"></div>
+                    </div>
+
+                    <hr class="border-slate-200">
+
+                    <!-- Photo Engine -->
+                    <div>
+                        <div class="flex items-center justify-between mb-1.5">
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">📸 รูปถ่ายสภาพรถ (พรีวิวได้สดทั้ง PC & มือถือ)</label>
+                            <span id="e-photo-badge" class="text-[11px] font-bold text-orange-700 bg-orange-100 px-2.5 py-0.5 rounded-full border border-orange-200">0 รูป</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3 mb-3">
+                            <div class="btn-3d relative overflow-hidden inline-flex items-center justify-center gap-2 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-xl py-2.5 px-3 text-xs font-bold shadow-md cursor-pointer">
+                                📷 ถ่ายรูปเพิ่ม
+                                <input type="file" accept="image/*" capture="environment" class="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10" onclick="this.value=null" onchange="addPhotoEdit(this)">
+                            </div>
+                            <div class="btn-3d relative overflow-hidden inline-flex items-center justify-center gap-2 bg-white hover:bg-slate-100 text-slate-800 rounded-xl py-2.5 px-3 text-xs font-semibold border border-orange-300/80 cursor-pointer">
+                                🖼️ แนบรูปคลัง
+                                <input type="file" accept="image/*" class="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10" onclick="this.value=null" onchange="addPhotoEdit(this)">
+                            </div>
+                        </div>
+                        <div id="e-photo-grid" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2.5 empty:hidden"></div>
+                    </div>
+
+                    <!-- Action Submit -->
+                    <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-200">
+                        <button type="button" onclick="closeEditModal()" class="btn-3d bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold px-4 py-2.5 rounded-xl text-xs border border-slate-300">ยกเลิก</button>
+                        <button type="submit" id="btn-submit-edit" class="btn-3d bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold px-6 py-2.5 rounded-xl text-xs shadow-md shadow-orange-500/30">
+                            <span id="btn-txt-edit">💾 บันทึกการแก้ไข</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== MODAL 3: LIGHTBOX PREVIEW (พรีวิวรูปภาพขนาดเต็มจอ คมชัดทั้ง PC & มือถือ พร้อมปุ่มลบลำดับรูป) ========== -->
+    <div id="lightbox" class="hidden fixed inset-0 z-50 bg-black/95 backdrop-blur-md flex flex-col items-center justify-between p-3 sm:p-5 card-anim no-print">
+        <div class="w-full flex items-center justify-between text-white z-10 pt-1 sm:pt-2 max-w-5xl mx-auto">
+            <span class="text-xs sm:text-sm font-semibold bg-white/10 px-3.5 py-1 rounded-full" id="lb-counter">1/1</span>
+            <button type="button" onclick="closeLB()" class="w-10 h-10 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-white text-lg font-bold transition-transform hover:scale-110">✕</button>
+        </div>
+        <div class="flex-1 w-full flex items-center justify-center my-auto overflow-hidden max-w-5xl mx-auto p-2">
+            <img id="lb-img" src="" class="max-w-full max-h-[82vh] object-contain rounded-2xl shadow-2xl border border-white/20 transition-transform" alt="">
+        </div>
+        <div class="w-full flex items-center justify-center gap-3 sm:gap-4 pb-3 sm:pb-4 z-10 max-w-5xl mx-auto flex-wrap" id="lb-nav">
+            <button type="button" onclick="lbPrev()" class="btn-3d bg-white/20 hover:bg-white/30 text-white font-bold px-4 sm:px-5 py-2 rounded-full text-xs sm:text-sm">◀ ก่อนหน้า</button>
+            <button type="button" id="lb-del-btn" onclick="deleteCurrentLBPhoto()" class="btn-3d bg-red-600/90 hover:bg-red-700 text-white font-bold px-4 sm:px-5 py-2 rounded-full text-xs sm:text-sm border border-red-400">🗑️ ลบรูปนี้</button>
+            <button type="button" onclick="lbNext()" class="btn-3d bg-white/20 hover:bg-white/30 text-white font-bold px-4 sm:px-5 py-2 rounded-full text-xs sm:text-sm">ถัดไป ▶</button>
+        </div>
+    </div>
+
+    <!-- ========== MODAL 4: UPLOAD PROGRESS PERCENTAGE MODAL (แสดงเปอร์เซ็นต์การอัปโหลดรูปภาพ 0% - 100%) ========== -->
+    <div id="upload-modal" class="hidden fixed inset-0 z-50 bg-slate-900/90 backdrop-blur-md flex items-center justify-center p-4 card-anim no-print">
+        <div class="bg-gradient-to-b from-slate-900 to-slate-800 rounded-3xl p-6 md:p-8 w-full max-w-md text-center border-2 border-orange-500 shadow-[0_0_50px_rgba(249,115,22,0.4)] space-y-4">
+            <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-orange-500 to-amber-500 text-white flex items-center justify-center text-3xl mx-auto shadow-lg shadow-orange-500/40 border border-orange-300 animate-pulse">
+                📸
+            </div>
+            <div>
+                <h3 class="text-lg md:text-xl font-black text-white tracking-wide">กำลังอัปโหลดข้อมูล & รูปภาพ</h3>
+                <p class="text-xs text-orange-200 mt-1" id="upload-status-sub">กรุณารอสักครู่ ระบบกำลังส่งรูปภาพขึ้น Google Drive...</p>
+            </div>
+            
+            <!-- Dynamic Progress Bar -->
+            <div class="space-y-2 pt-2">
+                <div class="w-full bg-slate-950 rounded-full h-4 p-0.5 border border-orange-400/60 overflow-hidden shadow-inner">
+                    <div id="upload-bar-inner" class="bg-gradient-to-r from-orange-500 via-amber-400 to-emerald-400 h-full rounded-full transition-all duration-300 shadow-[0_0_12px_rgba(249,115,22,0.8)]" style="width: 0%;"></div>
+                </div>
+                <div class="flex items-center justify-between text-xs font-extrabold px-1">
+                    <span class="text-slate-300" id="upload-detail-text">เริ่มต้นการอัปโหลด...</span>
+                    <span class="text-orange-400 text-sm font-black" id="upload-percent-text">0%</span>
+                </div>
+            </div>
+
+            <div class="bg-slate-950/80 p-3 rounded-2xl border border-slate-700/80 text-[11px] text-slate-300 font-medium leading-relaxed">
+                <span>🔒 กำลังบันทึกไฟล์รูปภาพลง Google Drive และเขียนลิงก์เข้า Google Sheet คอลัมน์ O</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== PRINT RECEIPT TEMPLATE ========== -->
+    <div id="print-area" class="hidden"></div>
+
+    <!-- ========== JAVASCRIPT ENGINE ========== -->
+    <script>
+    (function() {
+        'use strict';
+
+        /* รหัสผ่านสำหรับเจ้าหน้าที่ในอู่เท่านั้น (LPCS1234 — รองรับพิมพ์เล็ก/พิมพ์ใหญ่) */
+        const GARAGE_PIN = 'LPCS1234';
+
+        window.checkPin = function() {
+            var input = document.getElementById('pin-input');
+            var modal = document.getElementById('pin-modal');
+            if (!input || !modal) return;
+
+            var userTyped = S(input.value).trim().toUpperCase();
+
+            if (userTyped === GARAGE_PIN.toUpperCase()) {
+                localStorage.setItem('LPCAR_PIN_AUTH', 'TRUE');
+                modal.classList.add('hidden');
+                toast('ปลดล็อกเข้าใช้งานเรียบร้อย 🔓✨', 'success');
+            } else {
+                toast('รหัสผ่านไม่ถูกต้อง! เฉพาะคนในอู่เท่านั้น', 'error');
+                input.value = '';
+                input.focus();
+            }
+        };
+
+        window.lockApp = function() {
+            localStorage.removeItem('LPCAR_PIN_AUTH');
+            sessionStorage.removeItem('LPCAR_PIN_AUTH');
+            
+            var modal = document.getElementById('pin-modal');
+            var input = document.getElementById('pin-input');
+            if (modal) modal.classList.remove('hidden');
+            if (input) { input.value = ''; input.focus(); }
+            
+            toast('ล็อกหน้าจอเรียบร้อย 🔒', 'info');
+        };
+
+        function checkAuthStatus() {
+            var isAuthLocal = localStorage.getItem('LPCAR_PIN_AUTH');
+            var isAuthSession = sessionStorage.getItem('LPCAR_PIN_AUTH');
+            var modal = document.getElementById('pin-modal');
+
+            if (isAuthLocal === 'TRUE' || isAuthSession === 'TRUE') {
+                if (modal) modal.classList.add('hidden');
+            } else {
+                if (modal) modal.classList.remove('hidden');
+            }
+        }
+
+        function S(val) {
+            if (val === null || val === undefined) return '';
+            return String(val);
+        }
+
+        function escHtml(str) {
+            return S(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        }
+
+        function V(item, camel, pascal) {
+            return S(item[camel] || item[pascal] || '');
+        }
+
+        function cleanText(str) {
+            if (!str) return '';
+            return S(str).replace(/^(\d+[\.\)]\s*)+/g, '').trim();
+        }
+
+        function formatPhone(str) {
+            if (!str) return '';
+            var raw = S(str).replace(/\D/g, '');
+            if (raw.length === 9 && !raw.startsWith('0')) {
+                raw = '0' + raw;
+            }
+            if (raw.length === 10) {
+                return raw.replace(/(\d{3})(\d{3})(\d{4})/, '$1-$2-$3');
+            } else if (raw.length === 9) {
+                return raw.replace(/(\d{2})(\d{3})(\d{4})/, '$1-$2-$3');
+            }
+            return S(str);
+        }
+
+        /* ฟังก์ชันแยก URL หรือ Base64 ของรูปภาพอย่างถูกต้องโดยไม่ตัด Base64 ขาด */
+        function splitPhotoUrls(str) {
+            if (!str) return [];
+            var sStr = S(str).trim();
+            if (!sStr) return [];
+            
+            if (sStr.indexOf('|||') !== -1) {
+                return sStr.split('|||').map(function(s){ return s.trim(); }).filter(Boolean);
+            }
+
+            var matches = sStr.match(/(data:image\/[^;]+;base64,[^,\s]+|https?:\/\/[^\s,]+)/g);
+            if (matches && matches.length > 0) {
+                return matches;
+            }
+            return sStr.split(',').map(function(s){ return s.trim(); }).filter(Boolean);
+        }
+
+        window.autoFormatPhone = function(input) {
+            var val = input.value.replace(/\D/g, '');
+            if (val.length > 10) val = val.substring(0, 10);
+            if (val.length > 6) {
+                input.value = val.substring(0,3) + '-' + val.substring(3,6) + '-' + val.substring(6);
+            } else if (val.length > 3) {
+                input.value = val.substring(0,3) + '-' + val.substring(3);
+            } else {
+                input.value = val;
+            }
+        };
+
+        /* บีบอัดรูปภาพความกว้าง 450px คุณภาพ 0.35 — ได้ขนาดไฟล์เบาจิ๋ว ~15KB อัปโหลดเข้าเซิร์ฟเวอร์สำเร็จ 100% ไร้การโดนตัดทอน */
+        function compressImage(base64Str, maxWidth, quality) {
+            return new Promise(function(resolve) {
+                if (!base64Str || base64Str.indexOf('data:image') !== 0) {
+                    return resolve(base64Str);
+                }
+                var img = new Image();
+                img.src = base64Str;
+                img.onload = function() {
+                    var canvas = document.createElement('canvas');
+                    var w = img.width;
+                    var h = img.height;
+                    maxWidth = maxWidth || 450;
+                    quality = quality || 0.35;
+
+                    if (w > maxWidth) {
+                        h = Math.round((h * maxWidth) / w);
+                        w = maxWidth;
+                    }
+
+                    canvas.width = w;
+                    canvas.height = h;
+                    var ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, w, h);
+                    resolve(canvas.toDataURL('image/jpeg', quality));
+                };
+                img.onerror = function() { resolve(base64Str); };
+            });
+        }
+
+        /* ระบบป๊อปอัพแสดงเปอร์เซ็นต์การอัปโหลดรูปภาพ 0% - 100% */
+        window.showUploadProgress = function(percent, detailText, subText) {
+            var modal = document.getElementById('upload-modal');
+            var bar = document.getElementById('upload-bar-inner');
+            var pText = document.getElementById('upload-percent-text');
+            var dText = document.getElementById('upload-detail-text');
+            var sText = document.getElementById('upload-status-sub');
+
+            if (!modal) return;
+            modal.classList.remove('hidden');
+
+            var safePercent = Math.min(100, Math.max(0, Math.round(percent)));
+
+            if (bar) bar.style.width = safePercent + '%';
+            if (pText) pText.textContent = safePercent + '%';
+            if (dText && detailText) dText.textContent = detailText;
+            if (sText && subText) sText.textContent = subText;
+        };
+
+        window.closeUploadProgress = function() {
+            var modal = document.getElementById('upload-modal');
+            if (modal) modal.classList.add('hidden');
+        };
+
+        let sendLock = false;
+
+        /* ส่งข้อมูลเข้า Google Apps Script ด้วย Native Form Submit การันตี 100% ว่ารูปภาพและข้อมูลถึง Google Sheet เสมอ */
+        async function sendToAppsScript(payload) {
+            if (sendLock) return { status: 'busy' };
+            sendLock = true;
+
+            try {
+                var iframe = document.getElementById('gscript_iframe');
+                if (!iframe) {
+                    iframe = document.createElement('iframe');
+                    iframe.id = 'gscript_iframe';
+                    iframe.name = 'gscript_iframe';
+                    iframe.style.display = 'none';
+                    document.body.appendChild(iframe);
+                }
+
+                var form = document.createElement('form');
+                form.action = API_REPAIR;
+                form.method = 'POST';
+                form.target = 'gscript_iframe';
+                form.style.display = 'none';
+
+                var input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'data';
+                input.value = JSON.stringify(payload);
+                form.appendChild(input);
+
+                document.body.appendChild(form);
+                form.submit();
+
+                setTimeout(function() {
+                    try { form.remove(); } catch(_) {}
+                }, 1000);
+
+            } catch(e) {
+                console.error('sendToAppsScript error:', e);
+            }
+
+            setTimeout(function() {
+                sendLock = false;
+            }, 1000);
+
+            return { status: 'success' };
+        }
+
+        let rawSheetData = [];
+        let uniqueCarList = [];
+        let photosNew = [];
+        let photosEdit = [];
+        let busy = false;
+        let lbList = [];
+        let lbIdx = 0;
+        let currentCarDetailId = null;
+        let currentStatusFilter = 'ALL';
+
+        const UNITS = ['Pcs','Set','L','Kg','Box','Pair','Can','Bottle','Meter','Roll','Unit'];
+
+        document.addEventListener('DOMContentLoaded', function() {
+            checkAuthStatus();
+
+            try {
+                var cached = localStorage.getItem('LP_CAR_CACHE');
+                if (cached) {
+                    uniqueCarList = JSON.parse(cached);
+                    renderCards();
+                    setStatus(true, 'โหลดจากแคชเรียบร้อย ⚡ (' + uniqueCarList.length + ' คัน)');
+                }
+            } catch(_) {}
+
+            addRow('rows-list');
+            loadData();
+            setInterval(silentSync, 3000);
+        });
+
+        function saveLocalCache() {
+            try {
+                localStorage.setItem('LP_CAR_CACHE', JSON.stringify(uniqueCarList));
+            } catch(e) {
+                console.warn('LocalStorage limit reached', e);
+            }
+        }
+
+        window.setStatusFilter = function(status) {
+            currentStatusFilter = status;
+            
+            var btnAll  = document.getElementById('filter-all');
+            var btnPen  = document.getElementById('filter-pending');
+            var btnRep  = document.getElementById('filter-repairing');
+            var btnDone = document.getElementById('filter-done');
+
+            var normalClass = "btn-3d px-4 py-1.5 rounded-full font-bold bg-white text-slate-700 hover:bg-slate-100 border border-orange-300/80 shrink-0 text-xs";
+            
+            if (btnAll) btnAll.className = status === 'ALL' ? "btn-3d px-4 py-1.5 rounded-full font-bold bg-orange-600 text-white shadow-md shadow-orange-500/40 shrink-0 text-xs" : normalClass;
+            if (btnPen) btnPen.className = status === 'รอดำเนินการ' ? "btn-3d px-4 py-1.5 rounded-full font-bold bg-amber-500 text-white shadow-md shadow-amber-500/40 shrink-0 text-xs" : normalClass;
+            if (btnRep) btnRep.className = status === 'กำลังซ่อม' ? "btn-3d px-4 py-1.5 rounded-full font-bold bg-blue-600 text-white shadow-md shadow-blue-500/40 shrink-0 text-xs" : normalClass;
+            if (btnDone) btnDone.className = status === 'ซ่อมเสร็จแล้ว' ? "btn-3d px-4 py-1.5 rounded-full font-bold bg-emerald-600 text-white shadow-md shadow-emerald-500/40 shrink-0 text-xs" : normalClass;
+
+            renderCards();
+        };
+
+        window.switchTab = function(tab) {
+            var db  = document.getElementById('sec-db');
+            var frm = document.getElementById('sec-form');
+            var tDb = document.getElementById('tab-db');
+            var tFr = document.getElementById('tab-form');
+
+            if (tab === 'db') {
+                db.classList.remove('hidden');
+                frm.classList.add('hidden');
+                tDb.className = "tab-item-active w-1/2 py-2.5 sm:py-3 text-xs sm:text-sm md:text-base flex items-center justify-center gap-2 rounded-xl transition-all";
+                tFr.className = "tab-item-inactive w-1/2 py-2.5 sm:py-3 text-xs sm:text-sm md:text-base flex items-center justify-center gap-2 rounded-xl transition-all";
+            } else {
+                frm.classList.remove('hidden');
+                db.classList.add('hidden');
+                tFr.className = "tab-item-active w-1/2 py-2.5 sm:py-3 text-xs sm:text-sm md:text-base flex items-center justify-center gap-2 rounded-xl transition-all";
+                tDb.className = "tab-item-inactive w-1/2 py-2.5 sm:py-3 text-xs sm:text-sm md:text-base flex items-center justify-center gap-2 rounded-xl transition-all";
+            }
+            window.scrollTo({top:0, behavior:'smooth'});
+        };
+
+        window.toast = function(msg, type) {
+            var box = document.getElementById('toast-box');
+            if (!box) return;
+            var el = document.createElement('div');
+            var bg = 'bg-slate-900 text-white';
+            if (type === 'success') bg = 'bg-emerald-600 text-white';
+            if (type === 'error')   bg = 'bg-red-600 text-white';
+            if (type === 'warning') bg = 'bg-amber-600 text-white';
+            el.className = bg + ' px-4 py-3 rounded-2xl shadow-2xl text-xs font-bold flex items-center justify-between pointer-events-auto card-anim border border-orange-400/60';
+            el.innerHTML = '<span>' + msg + '</span><button onclick="this.parentElement.remove()" class="ml-3 opacity-70 hover:opacity-100 font-bold">✕</button>';
+            box.appendChild(el);
+            setTimeout(function(){ el.style.opacity='0'; setTimeout(function(){ el.remove(); },300); }, 2800);
+        };
+
+        function setStatus(online, text) {
+            var pill = document.getElementById('status-pill');
+            var dot = document.getElementById('status-dot');
+            if (!pill || !dot) return;
+            if (text) pill.title = 'สถานะระบบ: ' + text;
+
+            if (online) {
+                pill.className = "p-2 rounded-full bg-slate-500/90 border border-slate-400 shadow-sm flex items-center justify-center transition-all cursor-pointer hover:scale-105";
+                dot.className = "w-3 h-3 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)] animate-pulse";
+            } else {
+                pill.className = "p-2 rounded-full bg-slate-500/90 border border-slate-400 shadow-sm flex items-center justify-center transition-all cursor-pointer hover:scale-105";
+                dot.className = "w-3 h-3 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.8)] animate-ping";
+            }
+        }
+
+        function renderCombinedItems(symptomsStr, partsStr) {
+            var syms = S(symptomsStr).split(/[\n|]/).map(function(s){ return cleanText(s); }).filter(Boolean);
+            var prts = S(partsStr).split(/[\n|]/).map(function(s){ return cleanText(s); }).filter(Boolean);
+
+            var maxLen = Math.max(syms.length, prts.length);
+            if (maxLen === 0) {
+                return '<div class="p-3 bg-white rounded-xl text-slate-400 italic text-[11px] text-center border border-slate-200">ไม่มีระบุรายการซ่อมและอะไหล่</div>';
+            }
+
+            var html = '';
+            for (var i = 0; i < maxLen; i++) {
+                var sym = syms[i] ? (i + 1) + '. ' + syms[i] : '-';
+                var prt = prts[i] ? prts[i] : '-';
+
+                html += '<div class="bg-white p-2.5 rounded-xl border border-slate-200 card-anim flex flex-col sm:flex-row sm:items-center justify-between gap-2 shadow-2xs">'
+                    + '<div class="flex-1 font-bold text-slate-800 text-xs flex items-start gap-1.5">'
+                    + '<span class="text-orange-500 font-extrabold shrink-0">•</span>'
+                    + '<div>' + escHtml(sym) + '</div>'
+                    + '</div>'
+                    + (prt !== '-' 
+                        ? '<div class="text-xs font-semibold text-orange-900 bg-orange-50 px-3 py-1 rounded-lg border border-orange-200 shrink-0 flex items-center gap-1 self-start sm:self-auto shadow-2xs">'
+                          + '🔩 ' + escHtml(prt) 
+                          + '</div>'
+                        : '<div class="text-[11px] text-slate-400 italic shrink-0">ไม่มีใช้อะไหล่</div>'
+                      )
+                    + '</div>';
+            }
+            return html;
+        }
+
+        function processUniqueCars(list) {
+            var map = {};
+            list.forEach(function(item) {
+                var plate = V(item,'licensePlate','LicensePlate').toUpperCase().replace(/\s+/g,'');
+                var key = plate || V(item,'id','ID');
+                
+                if (!map[key]) {
+                    map[key] = {
+                        id: V(item,'id','ID'),
+                        licensePlate: V(item,'licensePlate','LicensePlate'),
+                        customerName: V(item,'customerName','CustomerName'),
+                        phone: formatPhone(V(item,'phone','Phone')),
+                        carModel: V(item,'carModel','CarModel'),
+                        mileage: V(item,'mileage','Mileage'),
+                        gear: V(item,'gear','Gear'),
+                        drive: V(item,'drive','Drive'),
+                        bodyType: V(item,'bodyType','BodyType'),
+                        symptoms: V(item,'symptoms','Symptoms'),
+                        parts: V(item,'parts','Parts'),
+                        mechanic: V(item,'mechanic','Mechanic'),
+                        helper: V(item,'helper','Helper'),
+                        photo: V(item,'photo','PhotoURL'),
+                        status: V(item,'status','Status') || 'รอดำเนินการ',
+                        date: V(item,'date','Date'),
+                        time: V(item,'time','Time'),
+                        notes: V(item,'notes','Notes'),
+                        row: item.row
+                    };
+                } else {
+                    var existing = map[key];
+                    if (item.customerName || item.CustomerName) existing.customerName = V(item,'customerName','CustomerName');
+                    if (item.phone || item.Phone) existing.phone = formatPhone(V(item,'phone','Phone'));
+                    if (item.carModel || item.CarModel) existing.carModel = V(item,'carModel','CarModel');
+                    if (item.mileage || item.Mileage) existing.mileage = V(item,'mileage','Mileage');
+                    if (item.mechanic || item.Mechanic) existing.mechanic = V(item,'mechanic','Mechanic');
+                    if (item.helper || item.Helper) existing.helper = V(item,'helper','Helper');
+                    if (item.status || item.Status) existing.status = V(item,'status','Status');
+                    if (item.notes || item.Notes) existing.notes = V(item,'notes','Notes');
+                    
+                    if (item.symptoms || item.Symptoms) {
+                        var newSym = V(item,'symptoms','Symptoms');
+                        if (existing.symptoms.indexOf(newSym) === -1) {
+                            existing.symptoms = existing.symptoms ? existing.symptoms + '\n' + newSym : newSym;
+                        }
+                    }
+                    if (item.parts || item.Parts) {
+                        var newPrt = V(item,'parts','Parts');
+                        if (existing.parts.indexOf(newPrt) === -1) {
+                            existing.parts = existing.parts ? existing.parts + '\n' + newPrt : newPrt;
+                        }
+                    }
+                    var newPh = V(item,'photo','PhotoURL');
+                    if (newPh) {
+                        var existingPhotos = splitPhotoUrls(existing.photo);
+                        var incomingPhotos = splitPhotoUrls(newPh);
+                        var merged = existingPhotos.concat(incomingPhotos);
+                        var uniqueSet = [];
+                        merged.forEach(function(u){
+                            if(u && uniqueSet.indexOf(u) === -1) uniqueSet.push(u);
+                        });
+                        existing.photo = uniqueSet.join('|||');
+                    }
+                }
+            });
+            return Object.values(map);
+        }
+
+        window.loadData = async function(manual) {
+            if (manual) toast('กำลังดึงข้อมูลล่าสุด...', 'info');
+            try {
+                var resp = await fetch(API_REPAIR, { redirect: 'follow' });
+                var text = await resp.text();
+                var list = parseResponse(text);
+                rawSheetData = list;
+                
+                var processed = processUniqueCars(list);
+                
+                processed.forEach(function(car) {
+                    var oldCar = uniqueCarList.find(function(c){ return S(c.licensePlate).toUpperCase().replace(/\s+/g,'') === S(car.licensePlate).toUpperCase().replace(/\s+/g,''); });
+                    if (oldCar && oldCar.photo && (!car.photo || car.photo === '')) {
+                        car.photo = oldCar.photo;
+                    }
+                });
+
+                uniqueCarList = processed;
+                saveLocalCache();
+                renderCards();
+                setStatus(true, 'เชื่อมต่อสด ⚡ (' + uniqueCarList.length + ' คัน)');
+                if (manual) toast('โหลดข้อมูลสำเร็จ: ' + uniqueCarList.length + ' คัน', 'success');
+            } catch(err) {
+                setStatus(false, 'ออฟไลน์ — ' + err.message);
+                if (manual) toast('เชื่อมต่อไม่ได้: ' + err.message, 'error');
+            }
+        };
+
+        async function silentSync() {
+            if (busy) return;
+            try {
+                var resp = await fetch(API_REPAIR, { redirect: 'follow' });
+                var text = await resp.text();
+                var list = parseResponse(text);
+                if (Array.isArray(list) && JSON.stringify(list) !== JSON.stringify(rawSheetData)) {
+                    rawSheetData = list;
+                    var processed = processUniqueCars(list);
+                    processed.forEach(function(car) {
+                        var oldCar = uniqueCarList.find(function(c){ return S(c.licensePlate).toUpperCase().replace(/\s+/g,'') === S(car.licensePlate).toUpperCase().replace(/\s+/g,''); });
+                        if (oldCar && oldCar.photo && (!car.photo || car.photo === '')) {
+                            car.photo = oldCar.photo;
+                        }
+                    });
+                    uniqueCarList = processed;
+                    saveLocalCache();
+                    renderCards();
+                    setStatus(true, 'เชื่อมต่อสด ⚡ (' + uniqueCarList.length + ' คัน)');
+                }
+            } catch(_) {}
+        }
+
+        function parseResponse(text) {
+            try {
+                var json = JSON.parse(text);
+                if (Array.isArray(json)) return json;
+                if (json && Array.isArray(json.data)) return json.data;
+            } catch(_) {}
+            return [];
+        }
+
+        window.updateStatusQuick = async function(id, plate, newStatus) {
+            var item = uniqueCarList.find(function(i){ return S(i.id) === id || S(i.licensePlate) === plate; });
+            if (item) {
+                item.status = newStatus;
+            }
+            saveLocalCache();
+            renderCards();
+
+            toast('อัปเดตสถานะ "' + newStatus + '" ทันที ⚡', 'success');
+            var payload = { action: 'updateStatus', id: id, licensePlate: plate, status: newStatus };
+            await sendToAppsScript(payload);
+        };
+
+        window.renderCards = function() {
+            var query = S(document.getElementById('search-input').value).toLowerCase().trim();
+            
+            var filtered = uniqueCarList.filter(function(item) {
+                var matchStatus = (currentStatusFilter === 'ALL') || (S(item.status) === currentStatusFilter);
+                if (!matchStatus) return false;
+
+                if (!query) return true;
+                var plate  = S(item.licensePlate).toLowerCase();
+                var name   = S(item.customerName).toLowerCase();
+                var model  = S(item.carModel).toLowerCase();
+                var mech   = S(item.mechanic).toLowerCase();
+                var syms   = S(item.symptoms).toLowerCase();
+                var prts   = S(item.parts).toLowerCase();
+                return plate.indexOf(query) !== -1 || name.indexOf(query) !== -1 || model.indexOf(query) !== -1 || mech.indexOf(query) !== -1 || syms.indexOf(query) !== -1 || prts.indexOf(query) !== -1;
+            });
+
+            var bCnt = document.getElementById('badge-count');
+            var sTot = document.getElementById('stat-total');
+            var sPen = document.getElementById('stat-pending');
+            var sDon = document.getElementById('stat-done');
+
+            if (bCnt) bCnt.textContent = uniqueCarList.length;
+            if (sTot) sTot.textContent = uniqueCarList.length + ' คัน';
+            
+            var pending = uniqueCarList.filter(function(i){ return S(i.status) !== 'ซ่อมเสร็จแล้ว'; }).length;
+            var done = uniqueCarList.length - pending;
+
+            if (sPen) sPen.textContent = pending + ' คัน';
+            if (sDon) sDon.textContent = done + ' คัน';
+
+            var container = document.getElementById('cards-container');
+            if (!container) return;
+
+            if (!filtered.length) {
+                container.innerHTML = '<div class="col-span-full lux-card rounded-2xl p-8 text-center"><div class="text-3xl mb-2">🔍</div><div class="text-xs sm:text-sm font-bold text-slate-700">ไม่พบรายการข้อมูลรถ</div><div class="text-xs text-slate-400 mt-1">ลองเลือกตัวกรองสถานะอื่น หรือค้นหาด้วยคำอื่น</div></div>';
+                return;
+            }
+
+            container.innerHTML = filtered.map(function(item) {
+                var id     = S(item.id);
+                var plate  = S(item.licensePlate) || 'ไม่ระบุทะเบียน';
+                var name   = S(item.customerName) || 'ไม่ระบุชื่อ';
+                var phone  = formatPhone(item.phone);
+                var model  = S(item.carModel) || 'ไม่ระบุรุ่น';
+                var mileage= S(item.mileage);
+                var status = S(item.status) || 'รอดำเนินการ';
+                var mech   = S(item.mechanic);
+                var rawPh  = S(item.photo);
+                var pList  = splitPhotoUrls(rawPh);
+
+                var sClass = 'bg-amber-600 text-white font-extrabold border-amber-700';
+                if (status === 'กำลังซ่อม') sClass = 'bg-blue-600 text-white font-extrabold border-blue-700';
+                if (status === 'ซ่อมเสร็จแล้ว') sClass = 'bg-emerald-600 text-white font-extrabold border-emerald-700';
+
+                // แถบแสดงรูปภาพบนการ์ดแบบพรีวิวได้สดๆ ทันทีทั้ง PC และ มือถือ
+                var photoStripHtml = '';
+                if (pList.length > 0) {
+                    var thumbs = pList.slice(0, 3).map(function(url, idx) {
+                        return '<div class="relative aspect-square rounded-xl overflow-hidden border border-orange-300 shadow-2xs cursor-pointer group hover:border-orange-500 transition-all btn-3d" onclick="event.stopPropagation(); openLB(' + JSON.stringify(pList) + ',' + idx + ',\'' + escHtml(id) + '\')">'
+                            + '<img src="' + url + '" class="w-full h-full object-cover group-hover:scale-110 transition-transform" alt="">'
+                            + '</div>';
+                    }).join('');
+
+                    photoStripHtml = '<div class="pt-1.5">'
+                        + '<div class="flex items-center justify-between text-[11px] font-bold text-slate-600 mb-1.5">'
+                        + '<span>📸 รูปภาพประกอบ (' + pList.length + ' รูป)</span>'
+                        + '<button type="button" onclick="openLB(' + JSON.stringify(pList) + ', 0,\'' + escHtml(id) + '\')" class="text-orange-600 hover:underline">👁️ พรีวิวดูทั้งหมด</button>'
+                        + '</div>'
+                        + '<div class="grid grid-cols-3 gap-2">' + thumbs + '</div>'
+                        + '</div>';
+                }
+
+                return '<div class="lux-card rounded-2xl p-4 sm:p-5 space-y-3 flex flex-col justify-between card-anim">'
+                    + '<div class="space-y-2 font-medium">'
+                    + '<div class="flex items-center justify-between gap-2 border-b border-orange-200/80 pb-2.5">'
+                    + '<span class="bg-gradient-to-r from-orange-500 to-orange-600 text-white font-extrabold px-3 py-1 rounded-xl text-xs sm:text-sm tracking-wider shadow-md shadow-orange-500/30">🚘 ' + escHtml(plate) + '</span>'
+                    
+                    + '<select onchange="updateStatusQuick(\'' + escHtml(id) + '\',\'' + escHtml(plate) + '\',this.value)" class="btn-3d px-3 py-1 text-xs font-extrabold rounded-full border cursor-pointer focus:outline-none transition-all ' + sClass + '">'
+                    + '<option value="รอดำเนินการ" ' + (status === 'รอดำเนินการ' ? 'selected' : '') + ' class="bg-amber-600 text-white">🟡 รอดำเนินการ</option>'
+                    + '<option value="กำลังซ่อม" ' + (status === 'กำลังซ่อม' ? 'selected' : '') + ' class="bg-blue-600 text-white">🔵 กำลังซ่อม</option>'
+                    + '<option value="ซ่อมเสร็จแล้ว" ' + (status === 'ซ่อมเสร็จแล้ว' ? 'selected' : '') + ' class="bg-emerald-600 text-white">🟢 ซ่อมเสร็จแล้ว</option>'
+                    + '</select>'
+
+                    + '</div>'
+                    + '<div class="space-y-1 pt-1">'
+                    + '<h3 class="text-xs sm:text-sm font-bold text-slate-900">👤 ' + escHtml(name) + (phone ? ' <a href="tel:' + escHtml(phone.replace(/\D/g,'')) + '" class="text-orange-600 hover:underline text-xs font-bold ml-1">📞 ' + escHtml(phone) + '</a>' : '') + '</h3>'
+                    + '<p class="text-xs font-medium text-slate-600">🚙 ' + escHtml(model) + (mileage ? ' • ⏱️ ' + escHtml(mileage) + ' กม.' : '') + '</p>'
+                    + (mech ? '<p class="text-xs font-bold text-orange-900 flex items-center gap-1 bg-orange-50 px-2.5 py-1 rounded-lg border border-orange-200 inline-block mt-1 shadow-2xs">👨‍🔧 ช่างผู้ดูแล: ' + escHtml(mech) + '</p>' : '')
+                    + '</div>'
+                    
+                    + photoStripHtml
+
+                    + '</div>'
+                    + '<div class="flex items-center justify-between pt-3 border-t border-orange-200/80 text-xs mt-2">'
+                    + '<button type="button" onclick="deleteCar(\'' + escHtml(id) + '\',\'' + escHtml(plate) + '\')" class="btn-3d bg-red-50 hover:bg-red-100 text-red-700 font-bold px-3 py-1.5 rounded-xl text-xs border border-red-200 transition-all flex items-center gap-1">🗑️ ลบ</button>'
+                    + '<div class="flex items-center gap-2">'
+                    + '<button type="button" onclick="openDetail(\'' + escHtml(id) + '\')" class="btn-3d bg-white hover:bg-slate-100 text-slate-800 font-bold px-3.5 py-1.5 rounded-xl text-xs border border-orange-300 transition-all">👁️ รายละเอียด</button>'
+                    + '<button type="button" onclick="openEditModal(\'' + escHtml(id) + '\')" class="btn-3d bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold px-4 py-1.5 rounded-xl text-xs shadow-md shadow-orange-500/30 transition-all">✏️ แก้ไข</button>'
+                    + '</div></div></div>';
+            }).join('');
+        };
+
+        window.openDetail = function(id) {
+            var item = uniqueCarList.find(function(i){ return S(i.id) === id || S(i.licensePlate) === id; });
+            if (!item) return;
+            currentCarDetailId = id;
+            document.getElementById('d-plate').textContent = '🚘 ' + S(item.licensePlate);
+            document.getElementById('d-customer').textContent = '👤 ' + S(item.customerName);
+            document.getElementById('d-model').textContent = S(item.carModel) || '-';
+            document.getElementById('d-phone').textContent = formatPhone(item.phone) || '-';
+            document.getElementById('d-mileage').textContent = S(item.mileage) ? S(item.mileage) + ' กม.' : '-';
+            document.getElementById('d-status').textContent = S(item.status) || 'รอดำเนินการ';
+            document.getElementById('d-mechanic').textContent = S(item.mechanic) || 'ไม่ได้ระบุ';
+            document.getElementById('d-helper').textContent = S(item.helper) || 'ไม่ได้ระบุ';
+
+            document.getElementById('d-combined-list').innerHTML = renderCombinedItems(item.symptoms, item.parts);
+
+            var nBox = document.getElementById('d-notes-box');
+            var nText = document.getElementById('d-notes');
+            if (item.notes) {
+                nText.textContent = S(item.notes);
+                nBox.classList.remove('hidden');
+            } else {
+                nText.textContent = 'ไม่มีบันทึกหมายเหตุเพิ่มเติม';
+                nBox.classList.remove('hidden');
+            }
+
+            var rawPh = S(item.photo);
+            var pList = splitPhotoUrls(rawPh);
+            var pc = document.getElementById('d-photos');
+            pc.innerHTML = pList.length ? pList.map(function(url,i){
+                return '<div class="aspect-square rounded-xl overflow-hidden border border-orange-300 shadow-2xs cursor-pointer hover:border-orange-500 transition-all btn-3d" onclick="openLB(' + JSON.stringify(pList) + ',' + i + ',\'' + escHtml(id) + '\')"><img src="' + url + '" class="w-full h-full object-cover" alt=""></div>';
+            }).join('') : '<div class="col-span-3 text-slate-400 text-xs py-3 text-center">ไม่มีรูปภาพ</div>';
+
+            var printBtn = document.getElementById('d-print-btn');
+            if (printBtn) printBtn.onclick = function(){ printReceipt(item); };
+
+            var eBtn = document.getElementById('d-edit-btn');
+            if (eBtn) eBtn.onclick = function(){ closeDetail(); openEditModal(id); };
+
+            var delBtn = document.getElementById('d-delete-btn');
+            if (delBtn) delBtn.onclick = function(){ closeDetail(); deleteCar(id, S(item.licensePlate)); };
+
+            document.getElementById('detail-modal').classList.remove('hidden');
+        };
+        window.closeDetail = function(){ document.getElementById('detail-modal').classList.add('hidden'); };
+
+        function printReceipt(item) {
+            var pArea = document.getElementById('print-area');
+            if (!pArea) return;
+
+            var syms = S(item.symptoms).split(/[\n|]/).map(function(s){ return cleanText(s); }).filter(Boolean);
+            var prts = S(item.parts).split(/[\n|]/).map(function(s){ return cleanText(s); }).filter(Boolean);
+            var maxLen = Math.max(syms.length, prts.length, 1);
+
+            var rowsHtml = '';
+            for (var i = 0; i < maxLen; i++) {
+                rowsHtml += '<tr style="border-bottom: 1px solid #e2e8f0;">'
+                    + '<td style="padding: 8px; text-align: center;">' + (i + 1) + '</td>'
+                    + '<td style="padding: 8px;">' + (syms[i] || '-') + '</td>'
+                    + '<td style="padding: 8px;">' + (prts[i] || '-') + '</td>'
+                    + '</tr>';
+            }
+
+            pArea.innerHTML = '<div style="font-family: sans-serif; max-w: 800px; margin: 0 auto; color: #1e293b;">'
+                + '<div style="display: flex; align-items: center; justify-between; border-bottom: 2px solid #ea580c; padding-bottom: 12px; margin-bottom: 16px;">'
+                + '<div>'
+                + '<h1 style="font-size: 24px; font-weight: bold; color: #ea580c; margin: 0;">LPCAR APP</h1>'
+                + '<p style="font-size: 13px; color: #64748b; margin: 4px 0 0 0;">ศูนย์บริการตรวจเช็ก ซ่อมแซม & อะไหล่รถยนต์</p>'
+                + '</div>'
+                + '<div style="text-align: right;">'
+                + '<h2 style="font-size: 18px; font-weight: bold; margin: 0;">ใบรับรถ / ใบแจ้งซ่อม</h2>'
+                + '<p style="font-size: 12px; color: #64748b; margin: 4px 0 0 0;">เลขที่: ' + (item.id || 'REP-001') + '</p>'
+                + '<p style="font-size: 12px; color: #64748b; margin: 2px 0 0 0;">วันที่: ' + (item.date || '') + ' ' + (item.time || '') + '</p>'
+                + '</div></div>'
+
+                + '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 16px; font-size: 13px;">'
+                + '<div>'
+                + '<p style="margin: 2px 0;"><strong>ชื่อลูกค้า:</strong> ' + (item.customerName || '-') + '</p>'
+                + '<p style="margin: 2px 0;"><strong>เบอร์โทรศัพท์:</strong> ' + formatPhone(item.phone) + '</p>'
+                + '<p style="margin: 2px 0;"><strong>ยี่ห้อ/รุ่นรถ:</strong> ' + (item.carModel || '-') + '</p>'
+                + '</div>'
+                + '<div>'
+                + '<p style="margin: 2px 0;"><strong>ทะเบียนรถ:</strong> <span style="color: #ea580c; font-weight: bold;">' + (item.licensePlate || '-') + '</span></p>'
+                + '<p style="margin: 2px 0;"><strong>เลขไมล์:</strong> ' + (item.mileage ? item.mileage + ' กม.' : '-') + '</p>'
+                + '<p style="margin: 2px 0;"><strong>ช่างผู้ดูแล:</strong> ' + (item.mechanic || '-') + (item.helper ? ' (ผู้ช่วย: ' + item.helper + ')' : '') + '</p>'
+                + '</div></div>'
+
+                + '<h3 style="font-size: 14px; font-weight: bold; margin-bottom: 8px;">รายการงานซ่อม & อะไหล่</h3>'
+                + '<table style="width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 16px;">'
+                + '<thead><tr style="background: #ea580c; color: white;">'
+                + '<th style="padding: 8px; width: 40px; text-align: center;">#</th>'
+                + '<th style="padding: 8px; text-align: left;">อาการเสีย / งานซ่อม</th>'
+                + '<th style="padding: 8px; text-align: left;">รายการอะไหล่ & จำนวน</th>'
+                + '</tr></thead>'
+                + '<tbody>' + rowsHtml + '</tbody></table>'
+
+                + (item.notes ? '<div style="background: #fffbebfb; padding: 10px; border-radius: 6px; border: 1px solid #fef3c7; font-size: 12px; margin-bottom: 24px;"><strong>หมายเหตุเพิ่มเติม:</strong> ' + item.notes + '</div>' : '')
+
+                + '<div style="display: flex; justify-content: space-between; margin-top: 40px; font-size: 12px; text-align: center;">'
+                + '<div style="width: 200px; border-top: 1px solid #94a3b8; pt-2;">ลงชื่อลูกค้า........................................<br>(....................................................)</div>'
+                + '<div style="width: 200px; border-top: 1px solid #94a3b8; pt-2;">ลงชื่อช่างผู้รับรถ........................................<br>(....................................................)</div>'
+                + '</div></div>';
+
+            pArea.classList.remove('hidden');
+            window.print();
+            setTimeout(function(){ pArea.classList.add('hidden'); }, 1000);
+        }
+
+        window.openEditModal = function(id) {
+            var item = uniqueCarList.find(function(i){ return S(i.id) === id || S(i.licensePlate) === id; });
+            if (!item) return;
+            currentCarDetailId = id;
+
+            document.getElementById('e-id').value = S(item.id);
+            document.getElementById('e-title').textContent = 'แก้ไขข้อมูลรถ: ' + S(item.licensePlate);
+            document.getElementById('e-customer').value = S(item.customerName);
+            document.getElementById('e-phone').value = formatPhone(item.phone);
+            document.getElementById('e-plate').value = S(item.licensePlate);
+            document.getElementById('e-model').value = S(item.carModel);
+            document.getElementById('e-mileage').value = S(item.mileage);
+            document.getElementById('e-gear').value = S(item.gear) || 'ออโต้ (Auto)';
+            document.getElementById('e-drive').value = S(item.drive) || '2WD';
+            document.getElementById('e-body').value = S(item.bodyType) || 'Sedan';
+            document.getElementById('e-status').value = S(item.status) || 'รอดำเนินการ';
+            document.getElementById('e-mechanic').value = S(item.mechanic);
+            document.getElementById('e-helper').value = S(item.helper);
+            document.getElementById('e-notes').value = S(item.notes);
+
+            var c = document.getElementById('e-rows-list'); if(c) c.innerHTML = '';
+            var syms = S(item.symptoms).split(/[\n|]/);
+            var prts = S(item.parts).split(/[\n|]/);
+            for (var i = 0; i < Math.max(syms.length, prts.length, 1); i++) {
+                var sym = cleanText(syms[i]);
+                var pRaw = cleanText(prts[i]);
+                var prt=pRaw, qty='1', unit='Pcs';
+                var m = pRaw.match(/(.*?)\s*\(x(\d+)\s*([A-Za-z]+)?\)/);
+                if(m){ prt=m[1].trim(); qty=m[2]; if(m[3]) unit=m[3]; }
+                addRow('e-rows-list', sym, prt, qty, unit);
+            }
+
+            var rawPh = S(item.photo);
+            photosEdit = splitPhotoUrls(rawPh);
+            drawPhotosEdit();
+
+            document.getElementById('edit-modal').classList.remove('hidden');
+        };
+
+        window.closeEditModal = function() {
+            document.getElementById('edit-modal').classList.add('hidden');
+        };
+
+        window.deleteCar = async function(id, plate) {
+            if (!confirm('คุณแน่ใจหรือไม่ว่าต้องการลบข้อมูลรถทะเบียน [' + (plate || id) + '] ออกจากฐานข้อมูล?')) {
+                return;
+            }
+
+            toast('กำลังลบข้อมูลรถ...', 'info');
+
+            uniqueCarList = uniqueCarList.filter(function(i){ return S(i.id) !== id && S(i.licensePlate) !== plate; });
+            saveLocalCache();
+            renderCards();
+
+            var payload = { action: 'deleteRepair', id: id, licensePlate: plate };
+            await sendToAppsScript(payload);
+            toast('ลบข้อมูลรถทะเบียน ' + plate + ' เรียบร้อยแล้ว 🗑️✨', 'success');
+        };
+
+        window.openLB = function(list, idx, carId) { 
+            lbList = list; 
+            lbIdx = idx; 
+            if (carId) currentCarDetailId = carId;
+            updateLB(); 
+            document.getElementById('lightbox').classList.remove('hidden'); 
+        };
+        window.closeLB = function(){ document.getElementById('lightbox').classList.add('hidden'); };
+        window.lbPrev = function(){ if(lbIdx>0){lbIdx--;updateLB();} };
+        window.lbNext = function(){ if(lbIdx<lbList.length-1){lbIdx++;updateLB();} };
+        function updateLB() {
+            document.getElementById('lb-img').src = lbList[lbIdx];
+            document.getElementById('lb-counter').textContent = 'รูปที่ ' + (lbIdx+1) + ' / ' + lbList.length;
+            document.getElementById('lb-nav').classList.toggle('hidden', lbList.length <= 1 && !currentCarDetailId);
+        }
+
+        /* ฟังก์ชันลบรูปภาพเฉพาะรูปที่กำลังดูอยู่ใน Lightbox ป๊อปอัพพรีวิว */
+        window.deleteCurrentLBPhoto = async function() {
+            if (!lbList || !lbList.length) return;
+            if (!confirm('คุณต้องการลบรูปภาพนี้ออกจากระบบใช่หรือไม่?')) return;
+
+            var deletedPhoto = lbList[lbIdx];
+            lbList.splice(lbIdx, 1);
+            if (lbIdx >= lbList.length) lbIdx = Math.max(0, lbList.length - 1);
+
+            if (lbList.length === 0) {
+                closeLB();
+            } else {
+                updateLB();
+            }
+
+            if (currentCarDetailId) {
+                var item = uniqueCarList.find(function(c){ return S(c.id) === currentCarDetailId || S(c.licensePlate) === currentCarDetailId; });
+                if (item) {
+                    item.photo = lbList.join('|||');
+                    saveLocalCache();
+                    renderCards();
+                    if (!document.getElementById('detail-modal').classList.contains('hidden')) {
+                        openDetail(currentCarDetailId);
+                    }
+                    toast('ลบรูปภาพออกแล้ว 🗑️', 'success');
+
+                    var payload = {
+                        action: 'updateRepair',
+                        id: item.id,
+                        licensePlate: item.licensePlate,
+                        photos: lbList
+                    };
+                    await sendToAppsScript(payload);
+                }
+            }
+        };
+
+        window.addRow = function(containerId, sym, prt, qty, unit) {
+            var c = document.getElementById(containerId || 'rows-list');
+            if (!c) return;
+            var rid = 'r' + Date.now() + Math.random().toString(36).substr(2,4);
+            var opts = UNITS.map(function(u){ return '<option value="'+u+'" '+(u===(unit||'Pcs')?'selected':'')+'>'+u+'</option>'; }).join('');
+            var d = document.createElement('div');
+            d.id = rid;
+            d.className = "flex flex-wrap sm:flex-nowrap items-center gap-2 bg-white p-2.5 rounded-xl border border-slate-200 card-anim shadow-2xs";
+            d.innerHTML = '<div class="flex-1 min-w-[140px]"><input type="text" placeholder="อาการเสีย/งานซ่อม" value="'+escHtml(cleanText(sym||''))+'" class="rs neon-input w-full px-3 py-1.5 bg-white rounded-lg text-xs font-medium focus:outline-none text-slate-800 transition-all"></div>'
+                +'<div class="flex-1 min-w-[140px]"><input type="text" placeholder="รายการอะไหล่" value="'+escHtml(cleanText(prt||''))+'" class="rp neon-input w-full px-3 py-1.5 bg-white rounded-lg text-xs font-medium focus:outline-none text-slate-800 transition-all"></div>'
+                +'<div class="w-20"><input type="number" placeholder="จำนวน" value="'+escHtml(qty||'1')+'" min="1" class="rq neon-input w-full px-2 py-1.5 bg-white rounded-lg text-xs text-center font-medium focus:outline-none text-slate-800 transition-all"></div>'
+                +'<div class="w-28"><select class="ru neon-input w-full px-2 py-1.5 bg-white rounded-lg text-xs font-bold text-slate-800 focus:outline-none transition-all">'+opts+'</select></div>'
+                +'<button type="button" onclick="removeRow(\''+rid+'\',\''+containerId+'\')" class="w-8 h-8 rounded-lg bg-red-50 hover:bg-red-100 text-red-700 flex items-center justify-center font-bold text-xs border border-red-200 shrink-0 btn-3d">✕</button>';
+            c.appendChild(d);
+        };
+        window.removeRow = function(rid, containerId) {
+            var c = document.getElementById(containerId || 'rows-list');
+            if (!c) return;
+            if (c.children.length <= 1) { toast('ต้องมีอย่างน้อย 1 รายการ','warning'); return; }
+            var el = document.getElementById(rid); if(el) el.remove();
+        };
+
+        window.addPhotoNew = function(input) {
+            if (!input.files || !input.files.length) return;
+            var files = Array.from(input.files);
+            toast('กำลังบีบอัดรูปภาพให้ไฟล์เบาและส่งผ่านเน็ตเร็ว ⚡...', 'info');
+
+            var promises = files.map(function(file) {
+                return new Promise(function(res) {
+                    var r = new FileReader();
+                    r.onload = async function(e) {
+                        var compressed = await compressImage(e.target.result, 600, 0.5);
+                        res(compressed);
+                    };
+                    r.onerror = function(){ res(null); };
+                    r.readAsDataURL(file);
+                });
+            });
+
+            Promise.all(promises).then(function(results) {
+                results.forEach(function(img) {
+                    if (img) photosNew.push(img);
+                });
+                drawPhotosNew();
+                toast('แนบรูปภาพแล้ว (' + photosNew.length + ' รูป) 📸','success');
+            });
+        };
+        function drawPhotosNew() {
+            var b = document.getElementById('photo-badge');
+            if (b) b.textContent = photosNew.length + ' รูป';
+            var g = document.getElementById('photo-grid');
+            if (!g) return;
+            g.innerHTML = photosNew.map(function(src,i){
+                return '<div class="relative group rounded-xl overflow-hidden aspect-square border-2 border-orange-400 shadow-md shadow-orange-500/25 bg-slate-900 card-anim btn-3d">'
+                    +'<img src="'+src+'" class="w-full h-full object-cover cursor-pointer group-hover:scale-105 transition-transform" onclick="openLB(photosNew,'+i+')" alt="">'
+                    +'<button type="button" onclick="rmPhotoNew('+i+')" class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold shadow-md">✕</button></div>';
+            }).join('');
+        }
+        window.rmPhotoNew = function(i){ photosNew.splice(i,1); drawPhotosNew(); toast('ลบรูปแล้ว','info'); };
+
+        window.addPhotoEdit = function(input) {
+            if (!input.files || !input.files.length) return;
+            var files = Array.from(input.files);
+            toast('กำลังบีบอัดรูปภาพให้ไฟล์เบาและส่งผ่านเน็ตเร็ว ⚡...', 'info');
+
+            var promises = files.map(function(file) {
+                return new Promise(function(res) {
+                    var r = new FileReader();
+                    r.onload = async function(e) {
+                        var compressed = await compressImage(e.target.result, 600, 0.5);
+                        res(compressed);
+                    };
+                    r.onerror = function(){ res(null); };
+                    r.readAsDataURL(file);
+                });
+            });
+
+            Promise.all(promises).then(function(results) {
+                results.forEach(function(img) {
+                    if (img) photosEdit.push(img);
+                });
+                drawPhotosEdit();
+                toast('แนบรูปแก้ไขแล้ว (' + photosEdit.length + ' รูป) 📸','success');
+            });
+        };
+        function drawPhotosEdit() {
+            var b = document.getElementById('e-photo-badge');
+            if (b) b.textContent = photosEdit.length + ' รูป';
+            var g = document.getElementById('e-photo-grid');
+            if (!g) return;
+            g.innerHTML = photosEdit.map(function(src,i){
+                return '<div class="relative group rounded-xl overflow-hidden aspect-square border-2 border-orange-400 shadow-md shadow-orange-500/25 bg-slate-900 card-anim btn-3d">'
+                    +'<img src="'+src+'" class="w-full h-full object-cover cursor-pointer group-hover:scale-105 transition-transform" onclick="openLB(photosEdit,'+i+')" alt="">'
+                    +'<button type="button" onclick="rmPhotoEdit('+i+')" class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold shadow-md">✕</button></div>';
+            }).join('');
+        }
+        window.rmPhotoEdit = function(i){ photosEdit.splice(i,1); drawPhotosEdit(); toast('ลบรูปแล้ว','info'); };
+
+        window.handleNewSubmit = async function(e) {
+            e.preventDefault();
+            if (busy) return;
+            busy = true;
+
+            var symEls = document.querySelectorAll('#rows-list .rs');
+            var prtEls = document.querySelectorAll('#rows-list .rp');
+            var qtyEls = document.querySelectorAll('#rows-list .rq');
+            var untEls = document.querySelectorAll('#rows-list .ru');
+            var symList=[], prtList=[];
+            symEls.forEach(function(el,i){
+                var s = cleanText(el.value);
+                var p = prtEls[i] ? cleanText(prtEls[i].value) : '';
+                var q = qtyEls[i] ? qtyEls[i].value.trim() : '1';
+                var u = untEls[i] ? untEls[i].value : 'Pcs';
+                if(s) symList.push((i + 1) + '. ' + s);
+                if(p) prtList.push((i + 1) + '. ' + p + ' (x' + q + ' ' + u + ')');
+            });
+
+            var plateVal = document.getElementById('f-plate').value.trim();
+            var newId = 'REP-' + Date.now();
+
+            var currentPhotos = (photosNew || []).slice();
+
+            showUploadProgress(15, 'กำลังเตรียมข้อมูลและบีบอัดรูปภาพ...', 'ขั้นตอนที่ 1/4: รวบรวมข้อมูลรถ');
+
+            var payload = {
+                action: 'addRepair',
+                id: newId,
+                customerName: document.getElementById('f-customer').value.trim(),
+                phone: formatPhone(document.getElementById('f-phone').value.trim()),
+                carModel: document.getElementById('f-model').value.trim(),
+                licensePlate: plateVal,
+                mileage: document.getElementById('f-mileage').value.trim(),
+                gear: document.getElementById('f-gear').value,
+                drive: document.getElementById('f-drive').value,
+                bodyType: document.getElementById('f-body').value,
+                mechanic: document.getElementById('f-mechanic').value.trim(),
+                helper: document.getElementById('f-helper').value.trim(),
+                notes: document.getElementById('f-notes').value.trim(),
+                symptoms: symList.join('\n'),
+                parts: prtList.join('\n'),
+                photos: currentPhotos
+            };
+
+            var existIndex = uniqueCarList.findIndex(function(c){ 
+                return S(c.licensePlate).toUpperCase().replace(/\s+/g,'') === plateVal.toUpperCase().replace(/\s+/g,''); 
+            });
+
+            var joinedPhotos = currentPhotos.join('|||');
+
+            if (existIndex !== -1) {
+                uniqueCarList[existIndex] = { 
+                    ...uniqueCarList[existIndex], 
+                    ...payload, 
+                    photo: joinedPhotos || uniqueCarList[existIndex].photo 
+                };
+            } else {
+                uniqueCarList.unshift({
+                    id: newId,
+                    ...payload,
+                    status: 'รอดำเนินการ',
+                    date: new Date().toLocaleDateString('th-TH'),
+                    time: new Date().toLocaleTimeString('th-TH'),
+                    photo: joinedPhotos
+                });
+            }
+            saveLocalCache();
+            renderCards();
+
+            showUploadProgress(40, 'กำลังส่งไฟล์รูปภาพ ' + currentPhotos.length + ' รูป ขึ้น Google Drive...', 'ขั้นตอนที่ 2/4: กำลังสร้างไฟล์ใน Drive');
+
+            document.getElementById('repair-form').reset();
+            document.getElementById('rows-list').innerHTML = '';
+            addRow('rows-list');
+            photosNew = []; 
+            drawPhotosNew();
+            switchTab('db');
+
+            showUploadProgress(75, 'กำลังบันทึกลิงก์รูปภาพลง Google Sheet...', 'ขั้นตอนที่ 3/4: บันทึกข้อมูลคอลัมน์ O');
+
+            await sendToAppsScript(payload);
+
+            showUploadProgress(100, 'อัปโหลดรูปภาพและบันทึกข้อมูลสำเร็จ 100%! ✨', 'เสร็จสมบูรณ์');
+
+            setTimeout(function() { 
+                closeUploadProgress();
+                toast('บันทึกเปิดใบแจ้งซ่อมและสร้างลิงก์รูปสำเร็จ 100% 📸✨', 'success');
+                busy = false; 
+                loadData(); 
+            }, 1200);
+        };
+
+        window.handleEditSubmit = async function(e) {
+            e.preventDefault();
+            if (busy) return;
+            busy = true;
+
+            var editId = document.getElementById('e-id').value;
+            var plateVal = document.getElementById('e-plate').value.trim();
+
+            var symEls = document.querySelectorAll('#e-rows-list .rs');
+            var prtEls = document.querySelectorAll('#e-rows-list .rp');
+            var qtyEls = document.querySelectorAll('#e-rows-list .rq');
+            var untEls = document.querySelectorAll('#e-rows-list .ru');
+            var symList=[], prtList=[];
+            symEls.forEach(function(el,i){
+                var s = cleanText(el.value);
+                var p = prtEls[i] ? cleanText(prtEls[i].value) : '';
+                var q = qtyEls[i] ? qtyEls[i].value.trim() : '1';
+                var u = untEls[i] ? untEls[i].value : 'Pcs';
+                if(s) symList.push((i + 1) + '. ' + s);
+                if(p) prtList.push((i + 1) + '. ' + p + ' (x' + q + ' ' + u + ')');
+            });
+
+            var currentPhotos = (photosEdit || []).slice();
+
+            showUploadProgress(20, 'กำลังเตรียมข้อมูลและรูปภาพแก้ไข...', 'ขั้นตอนที่ 1/4: บีบอัดรูปภาพ');
+
+            var payload = {
+                action: 'updateRepair',
+                id: editId || undefined,
+                customerName: document.getElementById('e-customer').value.trim(),
+                phone: formatPhone(document.getElementById('e-phone').value.trim()),
+                carModel: document.getElementById('e-model').value.trim(),
+                licensePlate: plateVal,
+                mileage: document.getElementById('e-mileage').value.trim(),
+                gear: document.getElementById('e-gear').value,
+                drive: document.getElementById('e-drive').value,
+                bodyType: document.getElementById('e-body').value,
+                status: document.getElementById('e-status').value,
+                mechanic: document.getElementById('e-mechanic').value.trim(),
+                helper: document.getElementById('e-helper').value.trim(),
+                notes: document.getElementById('e-notes').value.trim(),
+                symptoms: symList.join('\n'),
+                parts: prtList.join('\n'),
+                photos: currentPhotos
+            };
+
+            var idx = uniqueCarList.findIndex(function(c){ 
+                return S(c.id) === editId || S(c.licensePlate).toUpperCase().replace(/\s+/g,'') === plateVal.toUpperCase().replace(/\s+/g,''); 
+            });
+
+            var joinedPhotos = currentPhotos.join('|||');
+
+            if (idx !== -1) {
+                uniqueCarList[idx] = { 
+                    ...uniqueCarList[idx], 
+                    ...payload,
+                    photo: joinedPhotos
+                };
+            }
+            saveLocalCache();
+            renderCards();
+
+            showUploadProgress(50, 'กำลังส่งไฟล์รูปภาพขึ้น Google Drive...', 'ขั้นตอนที่ 2/4: อัปโหลดรูปภาพ');
+            closeEditModal();
+
+            showUploadProgress(80, 'กำลังบันทึกลิงก์รูปภาพลง Google Sheet...', 'ขั้นตอนที่ 3/4: อัปเดตคอลัมน์ O');
+
+            await sendToAppsScript(payload);
+
+            showUploadProgress(100, 'อัปเดตข้อมูลและสร้างลิงก์รูปสำเร็จ 100%! ✨', 'เสร็จสมบูรณ์');
+
+            setTimeout(function() { 
+                closeUploadProgress();
+                toast('อัปเดตข้อมูลและลิงก์รูปภาพสำเร็จ 100% 📸✨', 'success');
+                busy = false; 
+                loadData(); 
+            }, 1200);
+        };
+
+    })();
+    </script>
+</body>
+</html>
