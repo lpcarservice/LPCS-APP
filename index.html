@@ -176,9 +176,9 @@
                 <button type="button" onclick="lockApp()" title="ล็อกหน้าจอ" class="p-2.5 rounded-full bg-slate-800 hover:bg-slate-700 border border-slate-600 text-orange-400 font-bold transition-all btn-3d shadow-md shadow-black/20">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
                 </button>
-                <div id="status-pill" title="สถานะระบบ: กำลังเชื่อมต่อ..." class="p-2 rounded-full bg-slate-500/90 border border-slate-400 shadow-inner flex items-center justify-center transition-all">
+                <button type="button" id="status-pill" onclick="loadData(true)" title="กดเพื่อดึงข้อมูลสดทันที (Sync Now)" class="p-2 rounded-full bg-slate-500/90 border border-slate-400 shadow-inner flex items-center justify-center transition-all cursor-pointer hover:scale-110 active:scale-95 btn-3d">
                     <span id="status-dot" class="w-3 h-3 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]"></span>
-                </div>
+                </button>
                 <span class="text-[9px] md:text-[10px] text-orange-300/80 font-bold tracking-wide">Ver 1.0</span>
             </div>
         </div>
@@ -707,24 +707,7 @@
             <button type="button" onclick="closeCamera()" class="w-12 h-12 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-white text-2xl transition-transform hover:scale-110" title="ปิด">⬅️</button>
         </div>
     </div>
-    <!-- ========== MODAL 5: CAMERA CAPTURE (ถ่ายรูปจากกล้องสดบน PC & มือถือ) ========== -->
-    <div id="camera-modal" class="hidden fixed inset-0 z-50 bg-black flex flex-col items-center justify-between no-print" style="touch-action:none">
-        <div class="w-full flex items-center justify-between text-white p-3 sm:p-4 z-10">
-            <span class="text-sm font-bold bg-white/15 px-4 py-1.5 rounded-full"><svg class="w-4 h-4 mr-1.5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg> กล้องถ่ายรูปสด</span>
-            <button type="button" onclick="closeCamera()" class="w-10 h-10 rounded-full bg-white/20 hover:bg-red-500 flex items-center justify-center text-white text-lg font-bold transition-all">✕</button>
-        </div>
-        <div class="flex-1 w-full flex items-center justify-center overflow-hidden relative">
-            <video id="cam-video" autoplay playsinline muted class="max-w-full max-h-full object-contain"></video>
-            <canvas id="cam-canvas" class="hidden"></canvas>
-        </div>
-        <div class="w-full flex items-center justify-center gap-4 p-4 sm:p-5 z-10">
-            <button type="button" onclick="switchCamera()" class="w-12 h-12 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-white text-2xl transition-transform hover:scale-110" title="สลับกล้อง"><svg class="w-6 h-6 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg></button>
-            <button type="button" onclick="capturePhoto()" class="w-20 h-20 rounded-full bg-white border-4 border-orange-400 hover:border-orange-500 flex items-center justify-center shadow-lg shadow-orange-500/40 transition-transform hover:scale-105 active:scale-95">
-                <div class="w-14 h-14 rounded-full bg-gradient-to-br from-orange-400 to-orange-600"></div>
-            </button>
-            <button type="button" onclick="closeCamera()" class="w-12 h-12 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-white text-2xl transition-transform hover:scale-110" title="ปิด">⬅️</button>
-        </div>
-    </div>
+
 
     <!-- ========== MODAL 4: UPLOAD PROGRESS PERCENTAGE MODAL (แสดงเปอร์เซ็นต์การอัปโหลดรูปภาพ 0% - 100%) ========== -->
     <div id="upload-modal" class="hidden fixed inset-0 z-50 bg-slate-900/90 backdrop-blur-md flex items-center justify-center p-4 card-anim no-print">
@@ -774,6 +757,11 @@
 
         /* รหัสผ่านสำหรับเจ้าหน้าที่ในอู่เท่านั้น (LPCS1234 — รองรับพิมพ์เล็ก/พิมพ์ใหญ่) */
         const GARAGE_PIN = 'LPCS1234';
+
+        // URL สำรองของ Google Apps Script Web App ป้องกันปัญหาโหลดไฟล์ config.js ไม่ขึ้นเมื่อเปิดจากเว็บอื่น
+        const API_URL = (typeof API_REPAIR !== 'undefined' && API_REPAIR) 
+            ? API_REPAIR 
+            : "https://script.google.com/macros/s/AKfycbwvFW4h6SX3iIFM4xbZDJ4YwU7KtioTtQfqVDY_MsU4Anb8KHvUq61MaFcgJZydMF8t/exec";
 
         window.togglePin = function() {
             var input = document.getElementById('pin-input');
@@ -1021,7 +1009,7 @@
                 }
 
                 var form = document.createElement('form');
-                form.action = API_REPAIR;
+                form.action = API_URL;
                 form.method = 'POST';
                 form.target = 'gscript_iframe';
                 form.style.display = 'none';
@@ -1065,8 +1053,8 @@
 
         let rawSheetData = [];
         let uniqueCarList = [];
+        let deletedIds = []; // เก็บ ID ที่ถูกลบชั่วคราว เพื่อป้องกันข้อมูลโผล่ซ้ำระหว่างซิงค์
         let photosNew = [];
-                if(window.clearDraft) window.clearDraft();
         let photosEdit = [];
         let busy = false;
         let lbList = [];
@@ -1138,7 +1126,37 @@
 
             addRow('rows-list');
             loadData();
-            setInterval(silentSync, 3000);
+            restoreDraft(); // กู้คืนข้อมูลแบบร่างอัตโนมัติ
+            startSyncTimer(); // เปิดใช้งานระบบ Polling เฉพาะตอนอยู่หน้าแอป (Visibility API)
+
+            var formEl = document.getElementById('repair-form');
+            if (formEl) {
+                formEl.addEventListener('input', saveDraft);
+                formEl.addEventListener('change', saveDraft);
+            }
+        });
+
+        // จัดการเปิด/ปิดการซิงค์ข้อมูลตามสถานะหน้าจอ เพื่อประหยัดโควตา Google Apps Script
+        let syncIntervalId = null;
+        function startSyncTimer() {
+            if (syncIntervalId) clearInterval(syncIntervalId);
+            syncIntervalId = setInterval(function() {
+                if (document.visibilityState === 'visible') {
+                    silentSync();
+                }
+            }, 2500); // ⚡ ดึงข้อมูลซิงค์ด่วนทุก 2.5 วินาที เฉพาะหน้าที่เปิดใช้งานอยู่เพื่อความเรียลไทม์สูงสุด
+        }
+
+        document.addEventListener('visibilitychange', function() {
+            if (document.visibilityState === 'visible') {
+                loadData(false); // ⚡ ดึงข้อมูลสดใหม่ด่วนทันทีเมื่อสลับจอกลับมาจาก Google Sheet!
+                startSyncTimer();
+            } else {
+                if (syncIntervalId) {
+                    clearInterval(syncIntervalId);
+                    syncIntervalId = null;
+                }
+            }
         });
 
         function saveLocalCache() {
@@ -1326,19 +1344,72 @@
             return Object.values(map);
         }
 
+        // ระบบฉลาด: ผสานข้อมูลฝั่ง Local และ Remote เพื่อแก้ปัญหาการกระพริบ และข้อมูล 0 คัน
+        function mergeFetchedData(fetchedList) {
+            var now = Date.now();
+            
+            // 1. กรองไอดีที่ลบทิ้งออกไปก่อน
+            fetchedList = fetchedList.filter(function(item) {
+                return deletedIds.indexOf(item.id) === -1;
+            });
+            
+            var fetchedMap = {};
+            fetchedList.forEach(function(item) {
+                fetchedMap[item.id] = item;
+            });
+            
+            var merged = [];
+            
+            // 2. ไล่ผสานข้อมูลที่ได้จากเซิร์ฟเวอร์
+            fetchedList.forEach(function(fetchedItem) {
+                var localItem = uniqueCarList.find(function(i) { return i.id === fetchedItem.id; });
+                if (localItem && localItem.isPendingSync) {
+                    var age = now - (localItem.localUpdated || 0);
+                    if (age < 180000) { // ผสานไม่เกิน 3 นาที
+                        // ถ้าบน Sheet ลิงก์รูปยังไม่แปลงเป็น Drive URL (ยังเป็น Base64 หรือว่างอยู่) ให้คงภาพ Local Base64 ไปก่อน
+                        if (localItem.photo && localItem.photo.indexOf('data:image') !== -1 && (!fetchedItem.photo || fetchedItem.photo.indexOf('data:image') !== -1)) {
+                            fetchedItem.photo = localItem.photo;
+                            fetchedItem.isPendingSync = true;
+                            fetchedItem.localUpdated = localItem.localUpdated;
+                        } else {
+                            fetchedItem.isPendingSync = false; // อัปโหลด Drive URL เสร็จสมบูรณ์แล้ว
+                        }
+                        
+                        // ป้องกันสถานะดึงเก่ากลับมาทับระหว่างที่ส่งข้อมูลอยู่
+                        fetchedItem.status = localItem.status;
+                    }
+                }
+                merged.push(fetchedItem);
+            });
+            
+            // 3. คงข้อมูลรายการรถที่กดเพิ่มใหม่ฝั่ง Local แต่ยังไม่เข้าเซิร์ฟเวอร์ Sheet
+            uniqueCarList.forEach(function(localItem) {
+                if (localItem.isPendingSync && !fetchedMap[localItem.id]) {
+                    var age = now - (localItem.localUpdated || 0);
+                    if (age < 180000) { // เก็บไว้รอกระทบยอดได้ 3 นาที
+                        merged.unshift(localItem);
+                    }
+                }
+            });
+            
+            return merged;
+        }
+
         window.loadData = async function(manual) {
             if (manual) toast('กำลังดึงข้อมูลล่าสุด...', 'info');
             try {
-                var resp = await fetch(API_REPAIR, { redirect: 'follow' });
+                var fetchUrl = API_URL + (API_URL.indexOf('?') > -1 ? '&' : '?') + '_t=' + Date.now();
+                var resp = await fetch(fetchUrl, { redirect: 'follow' });
                 var text = await resp.text();
                 var list = parseResponse(text);
+                if (list === null) return; // หากตอบกลับผิดพลาด/ดึงไม่ผ่าน ไม่เอามาทำลายข้อมูลแคชที่มีอยู่เดิม
                 rawSheetData = list;
                 
                 var processed = processUniqueCars(list);
-                uniqueCarList = processed;
+                uniqueCarList = mergeFetchedData(processed);
                 lastLocalUpdateTime = Date.now();
-            saveLocalCache();
-            renderCards();
+                saveLocalCache();
+                renderCards();
                 setStatus(true, 'เชื่อมต่อสด <svg class="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg> (' + uniqueCarList.length + ' คัน)');
                 if (manual) toast('โหลดข้อมูลสำเร็จ: ' + uniqueCarList.length + ' คัน', 'success');
             } catch(err) {
@@ -1351,15 +1422,17 @@
         async function silentSync() {
             if (typeof busy !== 'undefined' && busy) return;
             if (typeof sendLock !== 'undefined' && sendLock) return;
-            if (Date.now() - lastLocalUpdateTime < 15000) return; // ป้องกันการดึงข้อมูลเก่ามาทับข้อมูลที่เพิ่งแก้ (Race Condition)
+            if (Date.now() - lastLocalUpdateTime < 3000) return; // ป้องกัน Race Condition
             try {
-                var resp = await fetch(API_REPAIR, { redirect: 'follow' });
+                var fetchUrl = API_URL + (API_URL.indexOf('?') > -1 ? '&' : '?') + '_t=' + Date.now();
+                var resp = await fetch(fetchUrl, { redirect: 'follow' });
                 var text = await resp.text();
                 var list = parseResponse(text);
+                if (list === null) return; // ดึงไม่ผ่าน ให้ละเว้นเพื่อรักษาความสมบูรณ์ของหน้าแอป
                 if (Array.isArray(list) && JSON.stringify(list) !== JSON.stringify(rawSheetData)) {
                     rawSheetData = list;
                     var processed = processUniqueCars(list);
-                    uniqueCarList = processed;
+                    uniqueCarList = mergeFetchedData(processed);
                     saveLocalCache();
                     
                     var active = document.activeElement;
@@ -1403,7 +1476,8 @@
         function parseResponse(text) {
             try {
                 var json = JSON.parse(text);
-                var arr = Array.isArray(json) ? json : (json && Array.isArray(json.data) ? json.data : []);
+                var arr = Array.isArray(json) ? json : (json && Array.isArray(json.data) ? json.data : null);
+                if (arr === null) return null;
                 arr.forEach(function(item) {
                     item.dateIn = stripApo(cleanDateObjectString(item.dateIn));
                     item.timeIn = stripApo(cleanDateObjectString(item.timeIn));
@@ -1414,7 +1488,7 @@
                 });
                 return arr;
             } catch(_) {}
-            return [];
+            return null; // คืนค่า null เพื่อบ่งบอกว่าการแปลงข้อมูลล้มเหลว (เช่น เซิร์ฟเวอร์ล่ม หรือส่ง HTML error มา)
         }
 
         window.updateStatusQuick = async function(id, plate, newStatus) {
@@ -1423,6 +1497,8 @@
             
             if (item) {
                 item.status = newStatus;
+                item.isPendingSync = true;
+                item.localUpdated = Date.now();
                 var now = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0,16);
                 if (newStatus === 'ซ่อมเสร็จแล้ว') {
                     payload.dateDone = formatToThDateOnly(now);
@@ -1442,6 +1518,10 @@
             renderCards();
 
             toast('อัปเดตสถานะ "' + newStatus + '" ทันที <svg class="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>', 'success');
+            if (!navigator.onLine) {
+                toast('⚠️ อุปกรณ์ออฟไลน์! บันทึกสถานะใหม่เข้าแคชเครื่องเรียบร้อยแล้ว', 'warning');
+                return;
+            }
             await sendToAppsScript(payload);
         };
 
@@ -1568,7 +1648,11 @@
                 }).join('');
             }
 
-            if (document.startViewTransition) {
+            // ตรวจสอบว่าผู้ใช้กำลังพิมพ์ช่องค้นหาอยู่หรือไม่ เพื่อปรับปรุงประสิทธิภาพการแสดงผลให้ลื่นไหล ไม่มีอาการแล็กและกระตุก
+            var isTyping = document.activeElement && document.activeElement.id === 'search-input';
+            if (isTyping) {
+                container.innerHTML = newHTML;
+            } else if (document.startViewTransition) {
                 document.startViewTransition(function() {
                     container.innerHTML = newHTML;
                 });
@@ -1577,6 +1661,16 @@
                 container.offsetHeight; 
                 container.style.animation = 'smoothFade 0.5s cubic-bezier(0.25, 1, 0.5, 1) forwards';
                 container.innerHTML = newHTML;
+            }
+
+            // รีเฟรชป๊อปอัพรายละเอียด (Detail Modal) หากผู้ใช้กำลังเปิดดูรถคันที่ข้อมูลมีการเปลี่ยนแปลง
+            if (!document.getElementById('detail-modal').classList.contains('hidden') && currentCarDetailId) {
+                var stillExists = uniqueCarList.some(function(c) { return S(c.id) === currentCarDetailId || S(c.licensePlate) === currentCarDetailId; });
+                if (stillExists) {
+                    openDetail(currentCarDetailId);
+                } else {
+                    closeDetail();
+                }
             }
         };
 
@@ -1770,22 +1864,21 @@
 
         window.deleteCar = function(id, plate) {
             window.customConfirm('ยืนยันการลบข้อมูล', 'คุณแน่ใจหรือไม่ว่าต้องการลบข้อมูลรถทะเบียน [' + (plate || id) + '] ออกจากฐานข้อมูล?', async function() {
-            
+                toast('กำลังลบข้อมูลรถ...', 'info');
 
-            toast('กำลังลบข้อมูลรถ...', 'info');
+                if (id) deletedIds.push(id);
+                uniqueCarList = uniqueCarList.filter(function(i){ return S(i.id) !== id && S(i.licensePlate) !== plate; });
+                lastLocalUpdateTime = Date.now();
+                saveLocalCache();
+                renderCards();
 
-            uniqueCarList = uniqueCarList.filter(function(i){ return S(i.id) !== id && S(i.licensePlate) !== plate; });
-            lastLocalUpdateTime = Date.now();
-            saveLocalCache();
-            renderCards();
-
-            var payload = { action: 'deleteRepair', id: id, licensePlate: plate };
-            await sendToAppsScript(payload);
-            toast('ลบข้อมูลรถทะเบียน ' + plate + ' เรียบร้อยแล้ว <svg class="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>', 'success');
+                var payload = { action: 'deleteRepair', id: id, licensePlate: plate };
+                await sendToAppsScript(payload);
+                toast('ลบข้อมูลรถทะเบียน ' + plate + ' เรียบร้อยแล้ว <svg class="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>', 'success');
             });
         };
 
-        /* ระบบ 3-Step Mirror Failover แก้ไขอาการรูปมาบ้างไม่มาบ้างเมื่อรีเฟรช 100% */
+        /* ระบบ 3-Step Mirror Failover แก้ไขอาการรูปมาบ้างไม่มาบ้างเมื่อรีเฟรช 100% พร้อมรูปภาพตกแต่งสวยงามหากภาพพัง */
         window.handleImgError = function(img) {
             if (!img || !img.src) return;
             var src = img.src;
@@ -1802,6 +1895,9 @@
             } else if (img.dataset.tryStep === '2') {
                 img.dataset.tryStep = '3';
                 img.src = 'https://drive.google.com/thumbnail?id=' + fid;
+            } else if (img.dataset.tryStep === '3') {
+                img.dataset.tryStep = 'failed';
+                img.src = 'https://placehold.co/600x400/e2e8f0/94a3b8?text=LPCAR+No+Image'; // ป้องกันรูปภาพเสียแสดงเป็นไอคอนเบราว์เซอร์หัก
             }
         };
 
@@ -1862,9 +1958,11 @@
                 var item = uniqueCarList.find(function(c){ return S(c.id) === currentCarDetailId || S(c.licensePlate) === currentCarDetailId; });
                 if (item) {
                     item.photo = lbList.join('|||');
+                    item.isPendingSync = true;
+                    item.localUpdated = Date.now();
                     lastLocalUpdateTime = Date.now();
-            saveLocalCache();
-            renderCards();
+                    saveLocalCache();
+                    renderCards();
                     if (!document.getElementById('detail-modal').classList.contains('hidden')) {
                         openDetail(currentCarDetailId);
                     }
@@ -2204,21 +2302,23 @@
 
             var joinedPhotos = currentPhotos.join('|||');
 
+            var localItem = {
+                ...payload,
+                status: existIndex !== -1 ? uniqueCarList[existIndex].status : 'รอดำเนินการ',
+                date: existIndex !== -1 ? uniqueCarList[existIndex].date : new Date().toLocaleDateString('th-TH'),
+                time: existIndex !== -1 ? uniqueCarList[existIndex].time : new Date().toLocaleTimeString('th-TH'),
+                photo: joinedPhotos || (existIndex !== -1 ? uniqueCarList[existIndex].photo : ''),
+                isPendingSync: true,
+                localUpdated: Date.now()
+            };
+
             if (existIndex !== -1) {
                 uniqueCarList[existIndex] = { 
                     ...uniqueCarList[existIndex], 
-                    ...payload, 
-                    photo: joinedPhotos || uniqueCarList[existIndex].photo 
+                    ...localItem
                 };
             } else {
-                uniqueCarList.unshift({
-                    id: newId,
-                    ...payload,
-                    status: 'รอดำเนินการ',
-                    date: new Date().toLocaleDateString('th-TH'),
-                    time: new Date().toLocaleTimeString('th-TH'),
-                    photo: joinedPhotos
-                });
+                uniqueCarList.unshift(localItem);
             }
             lastLocalUpdateTime = Date.now();
             saveLocalCache();
@@ -2231,7 +2331,15 @@
             addRow('rows-list');
             photosNew = []; 
             drawPhotosNew();
+            if (window.clearDraft) window.clearDraft(); // เคลียร์แบบร่างหลังจากอัปโหลดสำเร็จ
             switchTab('db');
+
+            if (!navigator.onLine) {
+                closeUploadProgress();
+                toast('⚠️ อุปกรณ์ของคุณตรวจพบว่าออฟไลน์! บันทึกข้อมูลเข้าแคชเครื่องเรียบร้อยแล้ว (จะแสดงผลในเครื่องทันที และจะอัปเดตขึ้น Google Sheets เมื่อต่อเน็ตสำเร็จ)', 'warning');
+                busy = false;
+                return;
+            }
 
             await sendToAppsScript(payload, function(percent) {
                 if (percent < 100) {
@@ -2315,7 +2423,9 @@
                 uniqueCarList[idx] = { 
                     ...uniqueCarList[idx], 
                     ...payload,
-                    photo: joinedPhotos
+                    photo: joinedPhotos,
+                    isPendingSync: true,
+                    localUpdated: Date.now()
                 };
             }
             lastLocalUpdateTime = Date.now();
@@ -2323,6 +2433,12 @@
             renderCards();
 
             closeEditModal();
+
+            if (!navigator.onLine) {
+                toast('⚠️ อุปกรณ์ของคุณตรวจพบว่าออฟไลน์! อัปเดตข้อมูลแก้ไขเข้าแคชเครื่องเรียบร้อยแล้ว (จะอัปเดตขึ้น Google Sheets เมื่อต่อเน็ตสำเร็จ)', 'warning');
+                busy = false;
+                return;
+            }
 
             await sendToAppsScript(payload, function(percent) {
                 if (percent < 100) {
@@ -2348,24 +2464,28 @@
                 plate: document.getElementById('f-plate')?.value || '',
                 customer: document.getElementById('f-customer')?.value || '',
                 phone: document.getElementById('f-phone')?.value || '',
-                brand: document.getElementById('f-brand')?.value || 'Honda',
                 model: document.getElementById('f-model')?.value || '',
-                year: document.getElementById('f-year')?.value || '',
                 mileage: document.getElementById('f-mileage')?.value || '',
                 gear: document.getElementById('f-gear')?.value || 'ออโต้ (Auto)',
                 drive: document.getElementById('f-drive')?.value || '2WD',
                 body: document.getElementById('f-body')?.value || 'Sedan',
+                dateIn: document.getElementById('f-date-in')?.value || '',
+                dateDone: document.getElementById('f-date-done')?.value || '',
+                dateOut: document.getElementById('f-date-out')?.value || '',
                 mechanic: document.getElementById('f-mechanic')?.value || '',
                 helper: document.getElementById('f-helper')?.value || '',
                 notes: document.getElementById('f-notes')?.value || '',
                 rows: []
             };
-            var rows = document.querySelectorAll('#rows-list .flex.items-center.gap-2.mb-2');
+            
+            var rows = document.querySelectorAll('#rows-list > div');
             rows.forEach(function(row) {
-                var sym = row.querySelector('.symptom-input')?.value || '';
-                var part = row.querySelector('.part-input')?.value || '';
+                var sym = row.querySelector('.rs')?.value || '';
+                var part = row.querySelector('.rp')?.value || '';
+                var qty = row.querySelector('.rq')?.value || '1';
+                var unit = row.querySelector('.ru')?.value || 'Pcs';
                 if (sym || part) {
-                    draft.rows.push({sym: sym, part: part});
+                    draft.rows.push({sym: sym, part: part, qty: qty, unit: unit});
                 }
             });
             localStorage.setItem('lpcar_draft', JSON.stringify(draft));
@@ -2379,33 +2499,29 @@
                     var ids = ['f-plate', 'f-customer', 'f-phone', 'f-brand', 'f-model', 'f-year', 'f-mileage', 'f-gear', 'f-drive', 'f-body', 'f-mechanic', 'f-helper', 'f-notes', 'f-date-in', 'f-date-done', 'f-date-out'];
                     ids.forEach(function(id) {
                         var el = document.getElementById(id);
-                        if (el && draft[id.replace('f-', '')] !== undefined && draft[id.replace('f-', '')] !== '') {
-                            el.value = draft[id.replace('f-', '')];
+                        var key = id.replace('f-', '');
+                        if (el && draft[key] !== undefined && draft[key] !== '') {
+                            el.value = draft[key];
                         }
                     });
+                    
                     var list = document.getElementById('rows-list');
                     if (draft.rows && draft.rows.length > 0) {
                         list.innerHTML = ''; 
                         draft.rows.forEach(function(r) {
-                            addRow('rows-list');
-                            var lastRow = list.lastElementChild;
-                            if (lastRow) {
-                                lastRow.querySelector('.symptom-input').value = r.sym;
-                                lastRow.querySelector('.part-input').value = r.part;
-                            }
+                            addRow('rows-list', r.sym, r.part, r.qty, r.unit);
                         });
                     }
-                } catch(e) {}
+                } catch(e) {
+                    console.error('Draft restore failed:', e);
+                }
             }
         }
 
-        var newForm = document.getElementById('new-form');
-        if (newForm) {
-            newForm.addEventListener('input', saveDraft);
-            newForm.addEventListener('change', saveDraft);
-            window.restoreDraft = restoreDraft;
-            window.clearDraft = function() { localStorage.removeItem('lpcar_draft'); };
-        }
+        // จัดเตรียม global functions
+        window.saveDraft = saveDraft;
+        window.restoreDraft = restoreDraft;
+        window.clearDraft = function() { localStorage.removeItem('lpcar_draft'); };
 
         // PC Wheel Zoom for Lightbox
         var lbZoom = 1;
@@ -2450,6 +2566,67 @@
             
             modal.classList.remove('hidden');
         };
+
+        // --- OFFLINE SYNC QUEUE SYSTEM ---
+        // ระบบตรวจจับและส่งข้อมูลค้างซิงค์ออฟไลน์อัตโนมัติเมื่ออินเทอร์เน็ตกลับมาใช้งานได้ (Offline Sync Queue)
+        window.addEventListener('online', async function() {
+            var pendingItems = uniqueCarList.filter(function(item) { return item.isPendingSync; });
+            if (pendingItems.length === 0) return;
+
+            toast('✨ สัญญาณเน็ตกลับมาแล้ว! กำลังส่งข้อมูลค้างซิงค์ ' + pendingItems.length + ' รายการ...', 'info');
+            
+            var successCount = 0;
+            for (var i = 0; i < pendingItems.length; i++) {
+                var item = pendingItems[i];
+                
+                // ตรวจสอบว่าเป็นการเพิ่มใหม่หรือการแก้ไขตัวเก่า
+                var action = 'addRepair';
+                var exists = rawSheetData.some(function(r) { 
+                    return String(r.id) === String(item.id) || String(r.licensePlate).toUpperCase().replace(/\s+/g,'') === String(item.licensePlate).toUpperCase().replace(/\s+/g,''); 
+                });
+                if (exists) {
+                    action = 'updateRepair';
+                }
+
+                var payload = {
+                    action: action,
+                    id: item.id,
+                    customerName: item.customerName,
+                    phone: item.phone,
+                    carModel: item.carModel,
+                    licensePlate: item.licensePlate,
+                    mileage: item.mileage,
+                    gear: item.gear,
+                    drive: item.drive,
+                    bodyType: item.bodyType,
+                    dateIn: formatToThDateOnly(toDatetimeLocal(item.dateIn, item.timeIn) || item.dateIn),
+                    timeIn: formatToThTimeOnly(toDatetimeLocal(item.dateIn, item.timeIn) || item.timeIn),
+                    dateDone: formatToThDateOnly(toDatetimeLocal(item.dateDone, item.timeDone) || item.dateDone),
+                    timeDone: formatToThTimeOnly(toDatetimeLocal(item.dateDone, item.timeDone) || item.timeDone),
+                    dateOut: formatToThDateOnly(toDatetimeLocal(item.dateOut, item.timeOut) || item.dateOut),
+                    timeOut: formatToThTimeOnly(toDatetimeLocal(item.dateOut, item.timeOut) || item.timeOut),
+                    status: item.status,
+                    mechanic: item.mechanic,
+                    helper: item.helper,
+                    notes: item.notes,
+                    symptoms: item.symptoms,
+                    parts: item.parts,
+                    photos: item.photo ? item.photo.split('|||') : []
+                };
+
+                var success = await sendToAppsScript(payload);
+                if (success) {
+                    item.isPendingSync = false;
+                    successCount++;
+                    saveLocalCache();
+                }
+            }
+            
+            if (successCount > 0) {
+                toast('✨ ซิงค์ข้อมูลรถออฟไลน์สำเร็จ ' + successCount + ' คัน เรียบร้อยแล้ว!', 'success');
+                loadData(false); // โหลดข้อมูลสดอีกรอบเพื่อกระทบยอด
+            }
+        });
 })();
     </script>
 
