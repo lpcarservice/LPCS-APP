@@ -16,6 +16,40 @@
 const SPREADSHEET_ID = '';
 
 const SHEET_NAME = 'Repairs';
+
+// =====================================================================
+//  🔐 ระบบตรวจรหัสผ่าน (APP_TOKEN)
+// ---------------------------------------------------------------------
+//  รหัสจริงไม่ได้เขียนไว้ในโค้ดนี้ (เพราะโค้ดอยู่บน GitHub สาธารณะ)
+//  แต่เก็บไว้ใน Script Properties ของโปรเจกต์ Apps Script
+//
+//  วิธีตั้งรหัส (ทำครั้งเดียว):
+//    1. ในหน้า Apps Script กดไอคอน ⚙️ การตั้งค่าโปรเจกต์ (Project Settings)
+//    2. เลื่อนลงหัวข้อ "คุณสมบัติของสคริปต์" (Script Properties)
+//    3. กดเพิ่มคุณสมบัติ → ชื่อ: APP_TOKEN  ค่า: <รหัสที่ต้องการ>
+//    4. กดบันทึกคุณสมบัติของสคริปต์
+//
+//  ⚠️ ถ้ายังไม่ได้ตั้ง APP_TOKEN ระบบจะยังเปิดให้ทุกคนใช้ได้ตามเดิม
+//     (กันแอปล่มระหว่างติดตั้ง) — ต้องตั้งค่าถึงจะเริ่มป้องกันจริง
+// =====================================================================
+function getExpectedToken() {
+  try {
+    return String(PropertiesService.getScriptProperties().getProperty('APP_TOKEN') || '').trim();
+  } catch (e) {
+    return '';
+  }
+}
+
+function isAuthorized(token) {
+  var expected = getExpectedToken();
+  if (!expected) return true; // ยังไม่ได้ตั้งรหัส → ไม่บังคับ
+  return String(token || '').trim().toUpperCase() === expected.toUpperCase();
+}
+
+function authError() {
+  return ok({ status: 'error', code: 'AUTH', message: 'รหัสผ่านไม่ถูกต้อง — ไม่มีสิทธิ์เข้าถึงข้อมูล' });
+}
+
 const LINE_NOTIFY_TOKEN = ''; // 🟢 ใส่ Token LINE Notify ของกลุ่มที่นี่ (ถ้าต้องการให้แจ้งเตือนเข้ามือถือ)
 
 // =====================================================================
@@ -208,12 +242,20 @@ function getSheet() {
 // =====================================================================
 function doGet(e) {
   try {
+    // 🔐 ตรวจรหัสผ่านก่อนทุกครั้ง — ไม่ผ่านคือไม่ได้ข้อมูลเลย
+    var token = (e && e.parameter && e.parameter.token) ? e.parameter.token : '';
+    var gd = (e && e.parameter && (e.parameter.action || e.parameter.data)) ? parseInput(e) : {};
+    if (!token && gd.token) token = gd.token;
+    if (!isAuthorized(token)) return authError();
+
+    // ให้แอปเช็กรหัสตอนหน้าจอล็อก (ไม่ต้องดึงข้อมูลทั้งตาราง)
+    if (gd.action === 'verifyToken' || (e && e.parameter && e.parameter.action === 'verifyToken')) {
+      return ok({ status: 'success', enforced: !!getExpectedToken() });
+    }
+
     var sheet = getSheet();
 
-    if (e && e.parameter && (e.parameter.action || e.parameter.data)) {
-      var d = parseInput(e);
-      if (d.action && d.action !== 'getRepairs') return handleAction(sheet, d);
-    }
+    if (gd.action && gd.action !== 'getRepairs') return handleAction(sheet, gd);
 
     var lastRow = sheet.getLastRow();
     if (lastRow < 2) return ok({ data: [] });
@@ -268,8 +310,15 @@ function doGet(e) {
 
 function doPost(e) {
   try {
-    var sheet = getSheet();
     var d = parseInput(e);
+
+    // 🔐 ตรวจรหัสผ่านก่อนเขียนข้อมูลทุกครั้ง
+    var token = d.token || ((e && e.parameter && e.parameter.token) ? e.parameter.token : '');
+    if (!isAuthorized(token)) return authError();
+
+    if (d.action === 'verifyToken') return ok({ status: 'success', enforced: !!getExpectedToken() });
+
+    var sheet = getSheet();
     return handleAction(sheet, d);
   } catch (err) {
     return ok({ status: 'error', message: err.message });

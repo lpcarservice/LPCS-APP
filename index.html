@@ -762,8 +762,43 @@
     (function() {
         'use strict';
 
-        /* รหัสผ่านสำหรับเจ้าหน้าที่ในอู่เท่านั้น (LPCS1234 — รองรับพิมพ์เล็ก/พิมพ์ใหญ่) */
-        const GARAGE_PIN = 'LPCS1234';
+        /* =====================================================================
+           ระบบรหัสผ่านเข้าใช้งาน (เฉพาะเจ้าหน้าที่ในอู่)
+           รหัสจริงถูกเก็บไว้ที่ Google Apps Script (Script Property: APP_TOKEN)
+           ไม่ได้เขียนไว้ในโค้ดหน้าเว็บ → เปิด View Source ก็หารหัสไม่เจอ
+           และทุกครั้งที่อ่าน/เขียนข้อมูล จะต้องแนบรหัสไปให้เซิร์ฟเวอร์ตรวจเสมอ
+           ===================================================================== */
+        const TOKEN_KEY = 'LPCAR_ACCESS_TOKEN';
+
+        function getToken() { try { return S(localStorage.getItem(TOKEN_KEY) || ''); } catch(_) { return ''; } }
+        function setToken(t) { try { localStorage.setItem(TOKEN_KEY, t); } catch(_) {} }
+        function clearToken() { try { localStorage.removeItem(TOKEN_KEY); } catch(_) {} }
+
+        /* แนบรหัสเข้าไปกับ URL ที่ใช้ดึงข้อมูล */
+        function withToken(url) {
+            var t = getToken();
+            if (!t) return url;
+            return url + (url.indexOf('?') > -1 ? '&' : '?') + 'token=' + encodeURIComponent(t);
+        }
+
+        /* เซิร์ฟเวอร์ปฏิเสธรหัส → ล็อกหน้าจอและบังคับกรอกรหัสใหม่ */
+        function forceRelock(msg) {
+            clearToken();
+            try {
+                localStorage.removeItem('LPCAR_PIN_AUTH');
+                sessionStorage.removeItem('LPCAR_PIN_AUTH');
+            } catch(_) {}
+            var modal = document.getElementById('pin-modal');
+            var input = document.getElementById('pin-input');
+            if (modal) { modal.classList.remove('hidden'); modal.classList.add('flex'); }
+            if (input) { input.type = 'password'; input.value = ''; }
+            toast(msg || 'รหัสผ่านไม่ถูกต้องหรือถูกเปลี่ยน กรุณากรอกรหัสใหม่', 'warning');
+        }
+
+        /* ตรวจว่าเซิร์ฟเวอร์ตอบกลับมาว่า "รหัสไม่ผ่าน" หรือไม่ */
+        function isAuthRejected(text) {
+            return !!text && S(text).indexOf('"code":"AUTH"') > -1;
+        }
 
         // URL สำรองของ Google Apps Script Web App ป้องกันปัญหาโหลดไฟล์ config.js ไม่ขึ้นเมื่อเปิดจากเว็บอื่น
         const API_URL = (typeof API_REPAIR !== 'undefined' && API_REPAIR) 
@@ -782,26 +817,60 @@
             }
         };
 
-        window.checkPin = function() {
+        window.checkPin = async function() {
             var input = document.getElementById('pin-input');
             var modal = document.getElementById('pin-modal');
             if (!input || !modal) return;
 
-            var userTyped = S(input.value).trim().toUpperCase();
+            var typed = S(input.value).trim();
+            if (!typed) { toast('กรุณากรอกรหัสผ่าน', 'warning'); return; }
 
-            if (userTyped === GARAGE_PIN.toUpperCase()) {
-                localStorage.setItem('LPCAR_PIN_AUTH', 'true');
-                modal.classList.add('hidden');
-                modal.classList.remove('flex');
-                toast('ปลดล็อกเข้าใช้งานเรียบร้อย <svg class="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"></path></svg>', 'success');
-            } else {
+            toast('กำลังตรวจสอบรหัสผ่านกับเซิร์ฟเวอร์...', 'info');
+
+            // true = รหัสถูก, false = รหัสผิด, null = ต่อเซิร์ฟเวอร์ไม่ได้
+            var verified = null;
+            try {
+                var url = API_URL + (API_URL.indexOf('?') > -1 ? '&' : '?')
+                        + 'action=verifyToken&token=' + encodeURIComponent(typed) + '&_t=' + Date.now();
+                var resp = await fetch(url, { redirect: 'follow' });
+                var j = JSON.parse(await resp.text());
+                verified = !!(j && j.status === 'success');
+                if (verified && j.enforced === false) {
+                    toast('⚠️ เซิร์ฟเวอร์ยังไม่ได้ตั้งรหัส APP_TOKEN — ตอนนี้ใครก็ดึงข้อมูลได้', 'warning');
+                }
+            } catch (e) {
+                verified = null;
+            }
+
+            if (verified === null) {
+                // เน็ตมีปัญหา/ออฟไลน์ → ให้เข้าได้ถ้ารหัสตรงกับที่เคยผ่านมาแล้วบนเครื่องนี้
+                if (getToken() && typed === getToken()) { unlockApp(); return; }
+                toast('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ กรุณาเช็กอินเทอร์เน็ตแล้วลองใหม่', 'error');
+                return;
+            }
+
+            if (!verified) {
+                clearToken();
                 toast('รหัสผ่านไม่ถูกต้อง! เฉพาะคนในอู่เท่านั้น', 'error');
                 input.value = '';
                 input.focus();
+                return;
             }
+
+            setToken(typed);
+            unlockApp();
         };
 
+        function unlockApp() {
+            var modal = document.getElementById('pin-modal');
+            try { localStorage.setItem('LPCAR_PIN_AUTH', 'true'); } catch(_) {}
+            if (modal) { modal.classList.add('hidden'); modal.classList.remove('flex'); }
+            toast('ปลดล็อกเข้าใช้งานเรียบร้อย <svg class="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"></path></svg>', 'success');
+            if (typeof window.loadData === 'function') window.loadData();
+        }
+
         window.lockApp = function() {
+            clearToken();
             localStorage.removeItem('LPCAR_PIN_AUTH');
             sessionStorage.removeItem('LPCAR_PIN_AUTH');
             
@@ -821,7 +890,8 @@
             var isAuthSession = sessionStorage.getItem('LPCAR_PIN_AUTH');
             var modal = document.getElementById('pin-modal');
 
-            if (isAuthLocal === 'true' || isAuthSession === 'true') {
+            // ต้องเคยผ่านการตรวจรหัสกับเซิร์ฟเวอร์แล้ว (มี token เก็บไว้) จึงจะข้ามหน้าล็อกได้
+            if ((isAuthLocal === 'true' || isAuthSession === 'true') && getToken()) {
                 if (modal) {
                     modal.classList.add('hidden');
                     modal.classList.remove('flex');
@@ -991,7 +1061,8 @@
             sendLock = true;
 
             return new Promise(function(resolve) {
-                var jsonStr = JSON.stringify(payload);
+                // แนบรหัสผ่านไปกับทุกคำสั่งบันทึก/แก้ไข/ลบ เพื่อให้เซิร์ฟเวอร์ตรวจสิทธิ์ก่อนเขียนข้อมูล
+                var jsonStr = JSON.stringify(Object.assign({}, payload, { token: getToken() }));
                 var totalBytes = jsonStr.length; 
                 
                 // คำนวณเวลาที่จะจำลองโหลด (ความเร็วโดยประมาณ 300KB/s)
@@ -1405,9 +1476,10 @@
         window.loadData = async function(manual) {
             if (manual) toast('กำลังดึงข้อมูลล่าสุด...', 'info');
             try {
-                var fetchUrl = API_URL + (API_URL.indexOf('?') > -1 ? '&' : '?') + '_t=' + Date.now();
+                var fetchUrl = withToken(API_URL + (API_URL.indexOf('?') > -1 ? '&' : '?') + '_t=' + Date.now());
                 var resp = await fetch(fetchUrl, { redirect: 'follow' });
                 var text = await resp.text();
+                if (isAuthRejected(text)) { forceRelock(); return; }
                 var list = parseResponse(text);
                 if (list === null) return; // หากตอบกลับผิดพลาด/ดึงไม่ผ่าน ไม่เอามาทำลายข้อมูลแคชที่มีอยู่เดิม
                 rawSheetData = list;
@@ -1431,9 +1503,10 @@
             if (typeof sendLock !== 'undefined' && sendLock) return;
             if (Date.now() - lastLocalUpdateTime < 3000) return; // ป้องกัน Race Condition
             try {
-                var fetchUrl = API_URL + (API_URL.indexOf('?') > -1 ? '&' : '?') + '_t=' + Date.now();
+                var fetchUrl = withToken(API_URL + (API_URL.indexOf('?') > -1 ? '&' : '?') + '_t=' + Date.now());
                 var resp = await fetch(fetchUrl, { redirect: 'follow' });
                 var text = await resp.text();
+                if (isAuthRejected(text)) { forceRelock(); return; }
                 var list = parseResponse(text);
                 if (list === null) return; // ดึงไม่ผ่าน ให้ละเว้นเพื่อรักษาความสมบูรณ์ของหน้าแอป
                 if (Array.isArray(list) && JSON.stringify(list) !== JSON.stringify(rawSheetData)) {
