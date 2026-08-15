@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <!-- ป้องกันไม่ให้ Google หรือ Search Engine ค้นหาเจอเว็บนี้เด็ดขาด -->
     <meta name="robots" content="noindex, nofollow, noarchive, nosnippet">
+    <!-- กันมือถือจำหน้าเวอร์ชันเก่าไว้ในแคช ทำให้อัปเดตแล้วไม่เห็นของใหม่ -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>LPCAR APP — ระบบฐานข้อมูลรถยนต์ & แจ้งซ่อม</title>
     <!-- PWA & Mobile App Icons -->
     <link rel="icon" type="image/png" href="logo.png">
@@ -19,7 +23,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <script src="config.js"></script>
+    <script src="config.js?v=2.1"></script>
     <style>
         * { font-family: 'Prompt', sans-serif; -webkit-tap-highlight-color: transparent; }
         
@@ -155,6 +159,7 @@
                 </button>
             </div>
             <p class="text-[10px] md:text-[11px] text-slate-400 font-medium">เฉพาะเจ้าหน้าที่และช่างซ่อมภายในอู่เท่านั้น</p>
+            <p class="text-[10px] text-slate-500 font-bold tracking-wider" id="app-version">v2.1 — ตรวจรหัสที่เซิร์ฟเวอร์</p>
         </div>
     </div>
 
