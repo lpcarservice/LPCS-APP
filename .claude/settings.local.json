@@ -1,8 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "PowerShell(try { $r=Invoke-RestMethod -Uri \"https://api.github.com/repos/lpcarservice/LPCS-APP\" -Headers @{ \"User-Agent\"=\"check\" }; \"visibility: \" + $r.visibility + \" | has_pages: \" + $r.has_pages + \" | default_branch: \" + $r.default_branch } catch { \"repo API error: \" + $_.Exception.Message }; try { $p=Invoke-RestMethod -Uri \"https://api.github.com/repos/lpcarservice/LPCS-APP/pages\" -Headers @{ \"User-Agent\"=\"check\" }; \"PAGES -> status: \" + $p.status + \" | url: \" + $p.html_url + \" | source: \" + $p.source.branch + \"/\" + $p.source.path } catch { \"pages API: \" + $_.Exception.Message })",
-      "PowerShell(try { $p=Invoke-RestMethod -Uri \"https://api.github.com/repos/lpcarservice/LPCS-APP/pages\" -Headers @{ \"User-Agent\"=\"check\" }; \"PAGES status: \" + $p.status + \" | url: \" + $p.html_url } catch { \"pages API: \" + $_.Exception.Message }; try { $r=Invoke-WebRequest -Uri \"https://lpcarservice.github.io/LPCS-APP/\" -UseBasicParsing -TimeoutSec 30; \"SITE -> HTTP \" + $r.StatusCode + \" \\(len \" + $r.Content.Length + \"\\)\" } catch { \"SITE -> \" + $_.Exception.Message })"
-    ]
-  }
-}
