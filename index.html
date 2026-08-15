@@ -159,7 +159,7 @@
                 </button>
             </div>
             <p class="text-[10px] md:text-[11px] text-slate-400 font-medium">เฉพาะเจ้าหน้าที่และช่างซ่อมภายในอู่เท่านั้น</p>
-            <p class="text-[10px] text-slate-500 font-bold tracking-wider" id="app-version">v2.1 — ตรวจรหัสที่เซิร์ฟเวอร์</p>
+            <p class="text-[10px] text-slate-500 font-bold tracking-wider" id="app-version">v2.2 — ตรวจรหัสที่เซิร์ฟเวอร์</p>
         </div>
     </div>
 
@@ -786,8 +786,16 @@
             return url + (url.indexOf('?') > -1 ? '&' : '?') + 'token=' + encodeURIComponent(t);
         }
 
-        /* เซิร์ฟเวอร์ปฏิเสธรหัส → ล็อกหน้าจอและบังคับกรอกรหัสใหม่ */
+        /* หน้าจอกำลังล็อกอยู่หรือไม่ */
+        function isLocked() {
+            var m = document.getElementById('pin-modal');
+            return !!(m && !m.classList.contains('hidden'));
+        }
+
+        /* เซิร์ฟเวอร์ปฏิเสธรหัส → ล็อกหน้าจอและบังคับกรอกรหัสใหม่
+           (ถ้าล็อกอยู่แล้วให้เงียบไว้ ไม่ต้องเด้งข้อความซ้ำ ๆ) */
         function forceRelock(msg) {
+            var alreadyLocked = isLocked();
             clearToken();
             try {
                 localStorage.removeItem('LPCAR_PIN_AUTH');
@@ -797,7 +805,7 @@
             var input = document.getElementById('pin-input');
             if (modal) { modal.classList.remove('hidden'); modal.classList.add('flex'); }
             if (input) { input.type = 'password'; input.value = ''; }
-            toast(msg || 'รหัสผ่านไม่ถูกต้องหรือถูกเปลี่ยน กรุณากรอกรหัสใหม่', 'warning');
+            if (!alreadyLocked) toast(msg || 'รหัสผ่านไม่ถูกต้องหรือถูกเปลี่ยน กรุณากรอกรหัสใหม่', 'warning');
         }
 
         /* ตรวจว่าเซิร์ฟเวอร์ตอบกลับมาว่า "รหัสไม่ผ่าน" หรือไม่ */
@@ -1479,12 +1487,16 @@
         }
 
         window.loadData = async function(manual) {
+            // ยังไม่ได้ปลดล็อก/ยังไม่มีรหัส → อย่าเพิ่งยิงไปหาเซิร์ฟเวอร์
+            if (!getToken() || isLocked()) return;
             if (manual) toast('กำลังดึงข้อมูลล่าสุด...', 'info');
             try {
+                var tokenAtRequest = getToken();
                 var fetchUrl = withToken(API_URL + (API_URL.indexOf('?') > -1 ? '&' : '?') + '_t=' + Date.now());
                 var resp = await fetch(fetchUrl, { redirect: 'follow' });
                 var text = await resp.text();
-                if (isAuthRejected(text)) { forceRelock(); return; }
+                // ล็อกใหม่เฉพาะกรณีที่รหัสยังเป็นตัวเดิมกับตอนยิงคำขอ (กันคำขอเก่าค้างท่อมาล้างรหัสที่เพิ่งกรอกถูก)
+                if (isAuthRejected(text)) { if (getToken() === tokenAtRequest) forceRelock(); return; }
                 var list = parseResponse(text);
                 if (list === null) return; // หากตอบกลับผิดพลาด/ดึงไม่ผ่าน ไม่เอามาทำลายข้อมูลแคชที่มีอยู่เดิม
                 rawSheetData = list;
@@ -1504,14 +1516,17 @@
 
         let lastLocalUpdateTime = 0;
         async function silentSync() {
+            // หน้าจอล็อกอยู่หรือยังไม่มีรหัส → หยุดซิงค์ ไม่งั้นจะโดนปฏิเสธแล้วเด้งเตือนรัว ๆ
+            if (!getToken() || isLocked()) return;
             if (typeof busy !== 'undefined' && busy) return;
             if (typeof sendLock !== 'undefined' && sendLock) return;
             if (Date.now() - lastLocalUpdateTime < 3000) return; // ป้องกัน Race Condition
             try {
+                var tokenAtRequest = getToken();
                 var fetchUrl = withToken(API_URL + (API_URL.indexOf('?') > -1 ? '&' : '?') + '_t=' + Date.now());
                 var resp = await fetch(fetchUrl, { redirect: 'follow' });
                 var text = await resp.text();
-                if (isAuthRejected(text)) { forceRelock(); return; }
+                if (isAuthRejected(text)) { if (getToken() === tokenAtRequest) forceRelock(); return; }
                 var list = parseResponse(text);
                 if (list === null) return; // ดึงไม่ผ่าน ให้ละเว้นเพื่อรักษาความสมบูรณ์ของหน้าแอป
                 if (Array.isArray(list) && JSON.stringify(list) !== JSON.stringify(rawSheetData)) {
