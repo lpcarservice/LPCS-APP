@@ -1,0 +1,632 @@
+// =====================================================================
+//  LP CAR APP — Google Apps Script v2.0 (สมบูรณ์ 100%)
+//  ✅ อัปโหลดรูป → Drive → ลิงก์สีฟ้า  ✅ เพิ่ม/แก้ไข/ลบ/อัปเดตสถานะ
+// =====================================================================
+//
+//  🔧 วิธีใช้งาน (ทำครั้งเดียว):
+//    1. ก๊อปโค้ดนี้ทั้งหมดไปวางใน Google Apps Script
+//    2. เลือกฟังก์ชัน setupSheet แล้วกด ▶ Run
+//    3. อนุมัติสิทธิ์ทั้งหมด (Spreadsheet + Drive) — ทำครั้งเดียวจบ!
+//    4. กด Deploy → New deployment → Web app → ทุกคน → Deploy
+//    5. คัดลอก URL มาใส่ใน config.js
+//
+// =====================================================================
+
+// ใส่ ID Google Sheet ของคุณที่นี่ (หากไม่ได้รันสคริปต์จากเมนู "ส่วนขยาย > Apps Script" ของชีตโดยตรง)
+const SPREADSHEET_ID = '';
+
+const SHEET_NAME = 'Repairs';
+const LINE_NOTIFY_TOKEN = ''; // 🟢 ใส่ Token LINE Notify ของกลุ่มที่นี่ (ถ้าต้องการให้แจ้งเตือนเข้ามือถือ)
+
+// =====================================================================
+//  📱 LINE Notify System
+// =====================================================================
+function sendLineNotify(message) {
+  if (!LINE_NOTIFY_TOKEN) return;
+  var url = 'https://notify-api.line.me/api/notify';
+  var options = {
+    method: 'post',
+    headers: { 'Authorization': 'Bearer ' + LINE_NOTIFY_TOKEN },
+    payload: { message: message },
+    muteHttpExceptions: true
+  };
+  try {
+    UrlFetchApp.fetch(url, options);
+  } catch(e) {
+    Logger.log('Line Notify Error: ' + e.toString());
+  }
+}
+
+const HEADERS = [
+  'รหัสแจ้งซ่อม',       // A
+  'ชื่อลูกค้า',          // B
+  'เบอร์โทรศัพท์',       // C
+  'ยี่ห้อและรุ่นรถ',      // D
+  'ทะเบียนรถ',          // E
+  'เลขไมล์',            // F
+  'ระบบเกียร์',          // G
+  'ระบบขับเคลื่อน',      // H
+  'ประเภทตัวถัง',        // I
+  'อาการเสียและงานซ่อม',  // J
+  'รายการอะไหล่',        // K
+  'จำนวนอะไหล่',         // L
+  'ชื่อช่างซ่อม',         // M
+  'ผู้ช่วยช่าง',          // N
+  'รูปภาพประกอบ',        // O
+  'สถานะงานซ่อม',        // P
+  'วันที่รับรถ',          // Q
+  'เวลารับรถ',          // R
+  'วันที่ซ่อมเสร็จ',         // S
+  'เวลาซ่อมเสร็จ',         // T
+  'วันที่ส่งรถ',          // U
+  'เวลาส่งรถ',          // V
+  'เวลาสร้างระบบ',        // W
+  'หมายเหตุ'             // X
+];
+
+// =====================================================================
+//  🔧 setupSheet — รันฟังก์ชันนี้ 1 ครั้ง เพื่อจัดหัวตาราง + เปิดสิทธิ์ Drive
+// =====================================================================
+// =====================================================================
+//  📂 getSpreadsheet — ฟังก์ชันค้นหาชีตอัตโนมัติ
+// =====================================================================
+function getSpreadsheet() {
+  var ss = null;
+  try {
+    ss = SpreadsheetApp.getActiveSpreadsheet() || SpreadsheetApp.getActive();
+  } catch (e) {
+    Logger.log('Active spreadsheet not found: ' + e.message);
+  }
+  if (!ss && SPREADSHEET_ID) {
+    try {
+      ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    } catch (e) {
+      Logger.log('Open by ID failed: ' + e.message);
+    }
+  }
+  if (!ss) {
+    throw new Error('❌ ไม่พบ Google Sheet: กรุณากดสร้างสคริปต์นี้จากเมนู "ส่วนขยาย > Apps Script" ของ Google Sheet หรือระบุ SPREADSHEET_ID ในโค้ด');
+  }
+  return ss;
+}
+
+function setupSheet() {
+  var ss = getSpreadsheet();
+  var sheet = ss.getSheetByName('ชีต1') || ss.getSheets()[0];
+  sheet.setName(SHEET_NAME);
+
+  // ล้างข้อมูลเดิมทั้งหมด (ถ้ามี)
+  sheet.clear();
+
+  // ใส่หัวตาราง
+  sheet.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]);
+
+  // จัดรูปแบบหัวตาราง — สวยงาม
+  var headerRange = sheet.getRange(1, 1, 1, HEADERS.length);
+  headerRange
+    .setFontWeight('bold')
+    .setFontSize(10)
+    .setFontFamily('Sarabun')
+    .setBackground('#ea580c')
+    .setFontColor('#ffffff')
+    .setHorizontalAlignment('center')
+    .setVerticalAlignment('middle')
+    .setBorder(true, true, true, true, true, true, '#c2410c', SpreadsheetApp.BorderStyle.SOLID);
+
+  sheet.setFrozenRows(1);
+  sheet.setRowHeight(1, 40);
+
+  // ปรับความกว้างคอลัมน์
+  sheet.setColumnWidth(1, 140);   // รหัส
+  sheet.setColumnWidth(2, 140);   // ชื่อ
+  sheet.setColumnWidth(3, 130);   // โทร
+  sheet.setColumnWidth(4, 160);   // ยี่ห้อ
+  sheet.setColumnWidth(5, 110);   // ทะเบียน
+  sheet.setColumnWidth(6, 90);    // ไมล์
+  sheet.setColumnWidth(7, 100);   // เกียร์
+  sheet.setColumnWidth(8, 110);   // ขับเคลื่อน
+  sheet.setColumnWidth(9, 100);   // ตัวถัง
+  sheet.setColumnWidth(10, 250);  // อาการ
+  sheet.setColumnWidth(11, 250);  // อะไหล่
+  sheet.setColumnWidth(12, 90);   // จำนวน
+  sheet.setColumnWidth(13, 120);  // ช่าง
+  sheet.setColumnWidth(14, 120);  // ผู้ช่วย
+  sheet.setColumnWidth(15, 220);  // รูปภาพ
+  sheet.setColumnWidth(16, 130);  // สถานะ
+  sheet.setColumnWidth(17, 140);  // วันที่
+  sheet.setColumnWidth(18, 100);  // เวลา
+  sheet.setColumnWidth(19, 180);  // เวลาสร้าง
+  sheet.setColumnWidth(17, 130);  // วันรับรถ
+  sheet.setColumnWidth(18, 100);  // เวลารับรถ
+  sheet.setColumnWidth(19, 130);  // วันซ่อมเสร็จ
+  sheet.setColumnWidth(20, 100);  // เวลาซ่อมเสร็จ
+  sheet.setColumnWidth(21, 130);  // วันส่งรถ
+  sheet.setColumnWidth(22, 100);  // เวลาส่งรถ
+  sheet.setColumnWidth(23, 180);  // เวลาสร้าง
+  sheet.setColumnWidth(24, 200);  // หมายเหตุ
+
+  // สร้างโฟลเดอร์เก็บรูป Drive (+ เปิดสิทธิ์ Drive ไปด้วยในตัว)
+  var folders = DriveApp.getFoldersByName('LP CAR PHOTOS');
+  var folder;
+  if (folders.hasNext()) {
+    folder = folders.next();
+  } else {
+    folder = DriveApp.createFolder('LP CAR PHOTOS');
+  }
+
+  Logger.log('============================================');
+  Logger.log('✅ จัดตั้งชีตสำเร็จ!');
+  Logger.log('📋 ชื่อชีต: ' + SHEET_NAME);
+  Logger.log('📁 โฟลเดอร์รูปภาพ: LP CAR PHOTOS');
+  Logger.log('============================================');
+  Logger.log('');
+  Logger.log('👉 ขั้นตอนถัดไป:');
+  Logger.log('   1. กด Deploy → การทำให้ใช้งานได้ใหม่');
+  Logger.log('   2. เลือกประเภท: เว็บแอป');
+  Logger.log('   3. ดำเนินการในฐานะ: ฉัน / ผู้มีสิทธิ์: ทุกคน');
+  Logger.log('   4. กดทำให้ใช้งานได้ → คัดลอก URL');
+}
+
+// =====================================================================
+//  📊 Spreadsheet Operations
+// =====================================================================
+function getSheet() {
+  var ss = getSpreadsheet();
+  var sheet = ss.getSheetByName(SHEET_NAME);
+  if (!sheet) {
+    sheet = ss.insertSheet(SHEET_NAME);
+    sheet.setFrozenRows(1);
+  }
+  
+  // Auto-update headers ONLY if sheet is completely empty (⚡ ช่วยเพิ่มความเร็วในการตอบกลับ API 2-3 เท่า)
+  var lr = sheet.getLastRow();
+  if (lr === 0) {
+    sheet.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]);
+    sheet.getRange(1, 1, 1, HEADERS.length)
+      .setFontWeight('bold').setFontSize(10).setFontFamily('Sarabun')
+      .setBackground('#ea580c').setFontColor('#ffffff')
+      .setHorizontalAlignment('center').setVerticalAlignment('middle')
+      .setBorder(true, true, true, true, true, true, '#c2410c', SpreadsheetApp.BorderStyle.SOLID);
+    
+    // Auto-adjust column widths
+    sheet.setRowHeight(1, 40);
+    sheet.setColumnWidth(1, 140); sheet.setColumnWidth(2, 140); sheet.setColumnWidth(3, 130);
+    sheet.setColumnWidth(4, 160); sheet.setColumnWidth(5, 110); sheet.setColumnWidth(6, 90);
+    sheet.setColumnWidth(7, 100); sheet.setColumnWidth(8, 110); sheet.setColumnWidth(9, 100);
+    sheet.setColumnWidth(10, 250); sheet.setColumnWidth(11, 250); sheet.setColumnWidth(12, 90);
+    sheet.setColumnWidth(13, 120); sheet.setColumnWidth(14, 120); sheet.setColumnWidth(15, 220);
+    sheet.setColumnWidth(16, 130); sheet.setColumnWidth(17, 130); sheet.setColumnWidth(18, 100);
+    sheet.setColumnWidth(19, 130); sheet.setColumnWidth(20, 100); sheet.setColumnWidth(21, 130);
+    sheet.setColumnWidth(22, 100); sheet.setColumnWidth(23, 180); sheet.setColumnWidth(24, 200);
+  }
+  
+  return sheet;
+}
+
+// =====================================================================
+//  🌐 Web App Endpoints
+// =====================================================================
+function doGet(e) {
+  try {
+    var sheet = getSheet();
+
+    if (e && e.parameter && (e.parameter.action || e.parameter.data)) {
+      var d = parseInput(e);
+      if (d.action && d.action !== 'getRepairs') return handleAction(sheet, d);
+    }
+
+    var lastRow = sheet.getLastRow();
+    if (lastRow < 2) return ok({ data: [] });
+
+    // ⚡ ดึงแบบรวดเร็ว อ่านครั้งเดียวทั้งตาราง ไม่ต้องเรียก getFormulas() ซ้ำซ้อน
+    var rows = sheet.getRange(2, 1, lastRow - 1, HEADERS.length).getValues();
+    var data = [];
+
+    for (var i = 0; i < rows.length; i++) {
+      var r = rows[i];
+      var id = str(r[0]);
+      var plate = str(r[4]);
+      if (!id && !plate) continue;
+
+      // ดึงลิงก์รูปภาพประกอบจากคอลัมน์ O
+      var photoCell = str(r[14]);
+      var photoForApp = extractDriveUrl(photoCell);
+
+      data.push({
+        row: i + 2,
+        id: id || 'REP-ROW-' + (i + 2),
+        customerName: str(r[1]),
+        phone: fmtPhone(r[2]),
+        carModel: str(r[3]),
+        licensePlate: plate,
+        mileage: str(r[5]),
+        gear: str(r[6]),
+        drive: str(r[7]),
+        bodyType: str(r[8]),
+        symptoms: str(r[9]),
+        parts: str(r[10]),
+        quantity: str(r[11]),
+        mechanic: str(r[12]),
+        helper: str(r[13]),
+        photo: photoForApp,
+        status: str(r[15]) || 'รอดำเนินการ',
+        dateIn: str(r[16]),
+        timeIn: str(r[17]),
+        dateDone: str(r[18]),
+        timeDone: str(r[19]),
+        dateOut: str(r[20]),
+        timeOut: str(r[21]),
+        createdAt: str(r[22]),
+        notes: str(r[23])
+      });
+    }
+    return ok({ data: data });
+  } catch (err) {
+    return ok({ error: err.message });
+  }
+}
+
+function doPost(e) {
+  try {
+    var sheet = getSheet();
+    var d = parseInput(e);
+    return handleAction(sheet, d);
+  } catch (err) {
+    return ok({ status: 'error', message: err.message });
+  }
+}
+
+// =====================================================================
+//  📸 Photo → Google Drive → ลิงก์สีฟ้า
+// =====================================================================
+function uploadPhoto(base64, name) {
+  try {
+    if (!base64 || typeof base64 !== 'string') return '';
+    if (base64.indexOf('http') === 0) return base64;
+    if (base64.indexOf('=HYPERLINK') === 0) return base64;
+
+    var parts = base64.split(',');
+    var raw = parts.length > 1 ? parts[1] : parts[0];
+    var mime = 'image/jpeg';
+    var ext = 'jpg';
+    var mm = parts[0].match(/:(.*?);/);
+    if (mm) mime = mm[1];
+    if (mime.indexOf('png') > -1) ext = 'png';
+    if (mime.indexOf('webp') > -1) ext = 'webp';
+
+    var clean = raw.replace(/ /g, '+').replace(/[^A-Za-z0-9+/=]/g, '');
+    while (clean.length % 4 !== 0) clean += '=';
+
+    var bytes = Utilities.base64Decode(clean);
+    var blob = Utilities.newBlob(bytes, mime, name + '.' + ext);
+
+    // บันทึกลงโฟลเดอร์ LP CAR PHOTOS
+    var folders = DriveApp.getFoldersByName('LP CAR PHOTOS');
+    var folder = folders.hasNext() ? folders.next() : DriveApp.createFolder('LP CAR PHOTOS');
+    var file = folder.createFile(blob);
+    var fid = file.getId();
+
+    try {
+      file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    } catch (_) {
+      try { file.setSharing(DriveApp.Access.ANYONE, DriveApp.Permission.VIEW); } catch (__) {}
+    }
+
+    // ส่งลิงก์ Google Drive มาตรฐานกลับไป (ไม่ใช้ HYPERLINK formula เพื่อให้ง่าย)
+    return 'https://drive.google.com/file/d/' + fid + '/view';
+  } catch (e) {
+    Logger.log('uploadPhoto error: ' + e.message);
+    return '';
+  }
+}
+
+function processPhotos(data) {
+  var urls = [];
+  var list = [];
+  if (Array.isArray(data.photos)) list = data.photos;
+  else if (data.photos) list = String(data.photos).split(/[\n\|,\,]+/);
+  else if (data.photo) list = String(data.photo).split(/[\n\|,\,]+/);
+
+  list.forEach(function (item, idx) {
+    var s = String(item).trim();
+    if (!s) return;
+    if (s.indexOf('data:') === 0 || s.length > 300) {
+      var url = uploadPhoto(s, 'car_' + Date.now() + '_' + idx);
+      if (url) urls.push(url);
+    } else if (s.indexOf('http') === 0) {
+      urls.push(s);
+    }
+  });
+
+  if (urls.length === 0) return [];
+  return urls;
+}
+
+// =====================================================================
+//  🔗 Rich Text Link Builder (ทำให้หลายรูปในเซลล์เดียวกดได้หมด)
+// =====================================================================
+function createLinksRichText(urls) {
+  if (!urls || urls.length === 0) return null;
+  var text = urls.join('\n');
+  var builder = SpreadsheetApp.newRichTextValue().setText(text);
+  
+  var linkStyle = SpreadsheetApp.newTextStyle()
+    .setForegroundColor('#1155cc')
+    .setUnderline(true)
+    .build();
+
+  var start = 0;
+  for (var i = 0; i < urls.length; i++) {
+    var url = urls[i];
+    var end = start + url.length;
+    builder.setLinkUrl(start, end, url);
+    builder.setTextStyle(start, end, linkStyle);
+    start = end + 1; // +1 for \n
+  }
+  return builder.build();
+}
+
+// แปลงลิงก์ Drive เป็น Thumbnail URL สำหรับแสดงบนแอป (รองรับหลายรูป)
+function extractDriveUrl(cellVal) {
+  if (!cellVal) return '';
+  var s = String(cellVal);
+
+  var matches = [];
+  var ids = [];
+  var regex = /(?:drive\.google\.com\/(?:file\/d\/|thumbnail\?id=)|lh3\.googleusercontent\.com\/d\/)([a-zA-Z0-9_-]+)/g;
+  var m;
+  while ((m = regex.exec(s)) !== null) {
+    if (m[1] && ids.indexOf(m[1]) === -1) {
+      ids.push(m[1]);
+      matches.push('https://drive.google.com/thumbnail?id=' + m[1] + '&sz=w800');
+    }
+  }
+
+  if (matches.length > 0) return matches.join('|||');
+
+  var items = s.split(/[\n\|,\,]+/);
+  var clean = [];
+  items.forEach(function(it) {
+    var u = String(it).trim();
+    if (u && u.indexOf('http') === 0 && clean.indexOf(u) === -1) clean.push(u);
+  });
+  return clean.join('|||');
+}
+
+// =====================================================================
+//  🔀 CRUD Handlers
+// =====================================================================
+function handleAction(sheet, d) {
+  var a = d.action || 'addRepair';
+  if (a === 'addRepair')    return addRepair(sheet, d);
+  if (a === 'updateRepair') return updateRepair(sheet, d);
+  if (a === 'updateStatus') return updateStatus(sheet, d);
+  if (a === 'deleteRepair') return deleteRepair(sheet, d);
+  return addRepair(sheet, d);
+}
+
+function addRepair(sheet, d) {
+  var plate = str(d.licensePlate).toUpperCase().trim();
+
+  // ถ้าทะเบียนซ้ำ → อัปเดตแทน
+  var existing = findByPlate(sheet, plate);
+  if (existing) { d.row = existing; return updateRepair(sheet, d); }
+  if (d.id) { var r = findById(sheet, d); if (r) { d.row = r; return updateRepair(sheet, d); } }
+
+  var photoUrls = processPhotos(d);
+  var photoText = photoUrls.join('\n');
+  var id = d.id || 'REP-' + Date.now();
+  var status = str(d.status) || 'รอดำเนินการ';
+
+  var row = [
+    id,
+    str(d.customerName),
+    fmtPhone(d.phone),
+    str(d.carModel),
+    plate,
+    str(d.mileage),
+    str(d.gear),
+    str(d.drive),
+    str(d.bodyType),
+    fmtMulti(d.symptoms),
+    fmtMulti(d.parts),
+    str(d.quantity),
+    str(d.mechanic),
+    str(d.helper),
+    photoText,
+    status,
+    d.dateIn || '',
+    d.timeIn || '',
+    d.dateDone || '',
+    d.timeDone || '',
+    d.dateOut || '',
+    d.timeOut || '',
+    new Date().toISOString(),
+    str(d.notes)
+  ];
+
+  sheet.appendRow(row);
+  var lr = sheet.getLastRow();
+  sheet.getRange(lr, 1, 1, HEADERS.length).setVerticalAlignment('top').setWrap(true);
+  
+  var richText = createLinksRichText(photoUrls);
+  if (richText) {
+    sheet.getRange(lr, 15).setRichTextValue(richText);
+  }
+  if (d.status !== undefined) colorStatus(sheet.getRange(lr, 16), str(d.status));
+
+  // ส่งแจ้งเตือน Line Notify
+  var msg = '\n🚗 เปิดใบแจ้งซ่อมใหม่ (LPCAR)\n' +
+            'ทะเบียน: ' + plate + '\n' +
+            'ลูกค้า: ' + str(d.customerName) + '\n' +
+            'อาการ: ' + fmtMulti(d.symptoms).replace(/<br>/g, ', ') + '\n' +
+            'ช่าง: ' + str(d.mechanic) + '\n' +
+            'สถานะ: ' + status;
+  sendLineNotify(msg);
+
+  return ok({ status: 'success', id: id, photoURL: photoUrls.join('|||') });
+}
+
+function updateRepair(sheet, d) {
+  var tr = findById(sheet, d) || findByPlate(sheet, d.licensePlate);
+  if (!tr) return ok({ status: 'error', message: 'ไม่พบรายการ' });
+
+  var cur = sheet.getRange(tr, 1, 1, HEADERS.length).getValues()[0];
+  var photoUrls = processPhotos(d);
+  var photoText = photoUrls.join('\n');
+
+  if (d.customerName !== undefined) cur[1] = str(d.customerName);
+  if (d.phone !== undefined) cur[2] = fmtPhone(d.phone);
+  if (d.carModel !== undefined) cur[3] = str(d.carModel);
+  if (d.licensePlate !== undefined) cur[4] = str(d.licensePlate).toUpperCase().trim();
+  if (d.mileage !== undefined) cur[5] = str(d.mileage);
+  if (d.gear !== undefined) cur[6] = str(d.gear);
+  if (d.drive !== undefined) cur[7] = str(d.drive);
+  if (d.bodyType !== undefined) cur[8] = str(d.bodyType);
+  if (d.symptoms !== undefined) cur[9] = fmtMulti(d.symptoms);
+  if (d.parts !== undefined) cur[10] = fmtMulti(d.parts);
+  if (d.mechanic !== undefined) cur[12] = str(d.mechanic);
+  if (d.helper !== undefined) cur[13] = str(d.helper);
+  if (d.photos !== undefined || d.photo !== undefined) cur[14] = photoText;
+  if (d.status !== undefined) cur[15] = str(d.status);
+  if (d.notes !== undefined) cur[19] = str(d.notes);
+  if (d.dateIn !== undefined) cur[16] = str(d.dateIn);
+  if (d.timeIn !== undefined) cur[17] = str(d.timeIn);
+  if (d.dateDone !== undefined) cur[18] = str(d.dateDone);
+  if (d.timeDone !== undefined) cur[19] = str(d.timeDone);
+  if (d.dateOut !== undefined) cur[20] = str(d.dateOut);
+  if (d.timeOut !== undefined) cur[21] = str(d.timeOut);
+  if (d.notes !== undefined) cur[23] = str(d.notes);
+
+  sheet.getRange(tr, 1, 1, HEADERS.length).setValues([cur]);
+  sheet.getRange(tr, 1, 1, HEADERS.length).setVerticalAlignment('top').setWrap(true);
+  
+  // ตรวจสอบและสร้างลิงก์สีฟ้าใหม่ทุกครั้งที่มีการบันทึกทับ (เพื่อไม่ให้ลิงก์เดิมหาย)
+  var finalPhotoText = String(cur[14] || '').trim();
+  if (finalPhotoText) {
+    var finalUrls = finalPhotoText.split('\n').map(function(u) { return String(u).trim(); }).filter(Boolean);
+    var richText = createLinksRichText(finalUrls);
+    if (richText) {
+      sheet.getRange(tr, 15).setRichTextValue(richText);
+    }
+  } else {
+    sheet.getRange(tr, 15).setValue('');
+  }
+  
+  if (d.status !== undefined) colorStatus(sheet.getRange(tr, 16), str(d.status));
+
+  // ส่งแจ้งเตือน Line Notify
+  var msg = '\n🔄 อัปเดตข้อมูลซ่อม (LPCAR)\n' +
+            'ทะเบียน: ' + cur[4] + '\n' +
+            'ลูกค้า: ' + cur[1] + '\n' +
+            'อาการ: ' + String(cur[9]).replace(/<br>/g, ', ') + '\n' +
+            'สถานะ: ' + cur[15];
+  sendLineNotify(msg);
+
+  return ok({ status: 'success', row: tr, photoURL: photoUrls.join('|||') });
+}
+
+function updateStatus(sheet, d) {
+  var tr = findById(sheet, d) || findByPlate(sheet, d.licensePlate);
+  if (!tr) return ok({ status: 'error', message: 'ไม่พบรายการ' });
+
+  var s = str(d.status) || 'รอดำเนินการ';
+  sheet.getRange(tr, 16).setValue(s);
+  colorStatus(sheet.getRange(tr, 16), s);
+  return ok({ status: 'success', row: tr, newStatus: s });
+}
+
+function deleteRepair(sheet, d) {
+  var tr = findById(sheet, d) || findByPlate(sheet, d.licensePlate);
+  if (!tr) return ok({ status: 'error', message: 'ไม่พบรายการ' });
+
+  // ป้องกันความปลอดภัย 100%: ห้ามลบแถวที่ 1 (หัวตาราง) และห้ามลบเกินจำนวนแถวที่มีจริงในชีต
+  if (tr > 1 && tr <= sheet.getLastRow()) {
+    sheet.deleteRow(tr);
+    return ok({ status: 'success', deletedRow: tr });
+  }
+  return ok({ status: 'error', message: 'ตำแหน่งแถวไม่ถูกต้อง' });
+}
+
+// =====================================================================
+//  🛠️ Utilities
+// =====================================================================
+function str(v) { return v == null ? '' : String(v); }
+
+function fmtPhone(v) {
+  if (!v) return '';
+  var r = String(v).replace(/\D/g, '');
+  if (r.length === 9 && r[0] !== '0') r = '0' + r;
+  if (r.length === 10) return r.replace(/(\d{3})(\d{3})(\d{4})/, '$1-$2-$3');
+  if (r.length === 9) return r.replace(/(\d{2})(\d{3})(\d{4})/, '$1-$2-$3');
+  return String(v);
+}
+
+function fmtMulti(v) {
+  if (!v) return '';
+  var s = String(v).trim();
+  if (s.indexOf('\n') > -1) return s;
+  if (s.indexOf('|') > -1) return s.split('|').map(function (x) { return x.trim(); }).filter(Boolean).join('\n');
+  return s;
+}
+
+function colorStatus(cell, s) {
+  var st = String(s).trim();
+  if (st === 'กำลังซ่อม') cell.setBackground('#2563eb').setFontColor('#fff').setFontWeight('bold');
+  else if (st === 'ซ่อมเสร็จแล้ว') cell.setBackground('#16a34a').setFontColor('#fff').setFontWeight('bold');
+  else if (st === 'ส่งรถแล้ว') cell.setBackground('#475569').setFontColor('#fff').setFontWeight('bold');
+  else cell.setBackground('#d97706').setFontColor('#fff').setFontWeight('bold');
+}
+
+function findById(sheet, d) {
+  if (d.row && Number(d.row) > 1) return Number(d.row);
+  if (!d.id) return null;
+  var lr = sheet.getLastRow();
+  if (lr < 2) return null;
+  var ids = sheet.getRange(2, 1, lr - 1, 1).getValues();
+  for (var i = 0; i < ids.length; i++) {
+    if (String(ids[i][0]).trim() === String(d.id).trim()) return i + 2;
+  }
+  return null;
+}
+
+function findByPlate(sheet, plate) {
+  if (!plate) return null;
+  var t = String(plate).toUpperCase().replace(/\s+/g, '');
+  if (!t) return null;
+  var lr = sheet.getLastRow();
+  if (lr < 2) return null;
+  var ps = sheet.getRange(2, 5, lr - 1, 1).getValues();
+  for (var i = 0; i < ps.length; i++) {
+    var c = String(ps[i][0]).toUpperCase().replace(/\s+/g, '');
+    if (c && c === t) return i + 2;
+  }
+  return null;
+}
+
+function parseInput(e) {
+  if (!e) return {};
+  if (e.parameter && e.parameter.data) {
+    try { return JSON.parse(e.parameter.data); } catch (_) {}
+  }
+  if (e.postData && e.postData.contents) {
+    var raw = String(e.postData.contents);
+    if (raw.indexOf('data=') === 0) {
+      try { return JSON.parse(decodeURIComponent(raw.substring(5))); } catch (_) {}
+    }
+    if (raw.indexOf('data=') > -1) {
+      var parts = raw.split('&');
+      for (var i = 0; i < parts.length; i++) {
+        if (parts[i].indexOf('data=') === 0) {
+          try { return JSON.parse(decodeURIComponent(parts[i].substring(5))); } catch (_) {}
+        }
+      }
+    }
+    try { return JSON.parse(raw); } catch (_) {}
+  }
+  return e.parameter || {};
+}
+
+function ok(obj) {
+  return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JAVASCRIPT);
+}

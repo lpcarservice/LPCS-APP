@@ -674,7 +674,14 @@
                 </button>
                 
                 <div class="w-px h-6 bg-white/20 mx-1"></div>
-                
+
+                <button type="button" id="lb-dl-btn" onclick="downloadCurrentLBPhoto()" class="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 shadow-lg shadow-emerald-500/30 text-white font-bold px-4 sm:px-6 py-2.5 rounded-full text-sm flex items-center gap-2 transition-all">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-8-3l-4-4m4 4l4-4m-4 4V4"></path></svg>
+                    <span class="hidden sm:inline">ดาวน์โหลด</span>
+                </button>
+
+                <div class="w-px h-6 bg-white/20 mx-1"></div>
+
                 <button type="button" id="lb-del-btn" onclick="deleteCurrentLBPhoto()" class="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 shadow-lg shadow-red-500/30 text-white font-bold px-5 sm:px-6 py-2.5 rounded-full text-sm flex items-center gap-2 transition-all">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                     ลบรูปนี้
@@ -1529,8 +1536,12 @@
             var query = S(document.getElementById('search-input').value).toLowerCase().trim();
             
             var filtered = uniqueCarList.filter(function(item) {
-                var matchStatus = (currentStatusFilter === 'ALL') || (S(item.status) === currentStatusFilter);
+                var st = S(item.status);
+                var matchStatus = (currentStatusFilter === 'ALL') || (st === currentStatusFilter);
                 if (!matchStatus) return false;
+
+                // แดชบอร์ดไม่แสดงรถที่ "ส่งรถแล้ว" (งานปิดแล้ว) — ยังเรียกดูได้โดยกดตัวกรอง "ส่งรถแล้ว" หรือค้นหาทะเบียนโดยตรง
+                if (currentStatusFilter === 'ALL' && !query && st === 'ส่งรถแล้ว') return false;
 
                 if (!query) return true;
                 var plate  = S(item.licensePlate).toLowerCase();
@@ -1938,6 +1949,102 @@
             document.getElementById('lb-counter').textContent = 'รูปที่ ' + (lbIdx+1) + ' / ' + lbList.length;
             document.getElementById('lb-nav').classList.toggle('hidden', lbList.length <= 1 && !currentCarDetailId);
         }
+
+        /* ===== ดาวน์โหลด/บันทึกรูปภาพลงเครื่อง (รองรับทั้งมือถือ Android, iOS และ PC) ===== */
+        function driveFileId(url) {
+            var u = S(url);
+            var m = u.match(/drive\.google\.com\/(?:file\/d\/|thumbnail\?id=|uc\?(?:[^"'\s]*?&)?id=)([a-zA-Z0-9_-]{10,})/)
+                 || u.match(/lh3\.googleusercontent\.com\/d\/([a-zA-Z0-9_-]{10,})/);
+            return (m && m[1]) ? m[1] : '';
+        }
+
+        function dataUriToBlob(uri) {
+            var parts = S(uri).split(',');
+            var mime = (parts[0].match(/:(.*?);/) || [])[1] || 'image/jpeg';
+            var bin = atob(parts[1] || '');
+            var buf = new Uint8Array(bin.length);
+            for (var i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+            return new Blob([buf], { type: mime });
+        }
+
+        function saveBlobToDevice(blob, filename) {
+            var objUrl = URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = objUrl;
+            a.download = filename;
+            a.rel = 'noopener';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            setTimeout(function(){ URL.revokeObjectURL(objUrl); }, 10000);
+        }
+
+        /* ดึงไฟล์รูปต้นฉบับจาก Google Drive — ไล่ลองหลายลิงก์จนกว่าจะได้ไฟล์จริง */
+        async function fetchPhotoBlob(url) {
+            var fid = driveFileId(url);
+            var sources = fid
+                ? ['https://lh3.googleusercontent.com/d/' + fid + '=s0',
+                   'https://drive.google.com/uc?export=download&id=' + fid,
+                   'https://drive.google.com/thumbnail?id=' + fid + '&sz=w1600',
+                   url]
+                : [url];
+
+            for (var i = 0; i < sources.length; i++) {
+                try {
+                    var res = await fetch(sources[i], { mode: 'cors', referrerPolicy: 'no-referrer' });
+                    if (!res.ok) continue;
+                    var blob = await res.blob();
+                    if (blob && blob.size > 0 && S(blob.type).indexOf('image') === 0) return blob;
+                } catch (e) { /* ลิงก์นี้ใช้ไม่ได้ → ลองแหล่งถัดไป */ }
+            }
+            return null;
+        }
+
+        window.downloadCurrentLBPhoto = async function() {
+            if (!lbList || !lbList.length) return;
+            var url = S(lbList[lbIdx]);
+            if (!url) return;
+
+            var plate = '';
+            if (currentCarDetailId) {
+                var car = uniqueCarList.find(function(c){ return S(c.id) === currentCarDetailId || S(c.licensePlate) === currentCarDetailId; });
+                if (car) plate = S(car.licensePlate);
+            }
+            var base = 'LPCAR_' + (plate ? plate.replace(/[\\/:*?"<>|\s]+/g, '') + '_' : '') + (lbIdx + 1);
+
+            toast('กำลังเตรียมไฟล์รูปภาพ...', 'info');
+
+            var blob = null;
+            try {
+                blob = url.indexOf('data:') === 0 ? dataUriToBlob(url) : await fetchPhotoBlob(url);
+            } catch (e) { blob = null; }
+
+            if (!blob) {
+                // เบราว์เซอร์บล็อกการโหลดข้ามโดเมน → เปิดไฟล์ต้นฉบับให้กดบันทึกเอง
+                var fid = driveFileId(url);
+                window.open(fid ? 'https://drive.google.com/uc?export=download&id=' + fid : url, '_blank', 'noopener');
+                toast('เปิดรูปต้นฉบับในแท็บใหม่ — กดค้างที่รูปเพื่อบันทึกลงเครื่อง', 'warning');
+                return;
+            }
+
+            var ext = S(blob.type).indexOf('png') > -1 ? 'png' : (S(blob.type).indexOf('webp') > -1 ? 'webp' : 'jpg');
+            var filename = base + '.' + ext;
+
+            // มือถือ: ใช้เมนูแชร์ของเครื่อง เพื่อบันทึกลงคลังรูปหรือส่งต่อ LINE ได้ทันที
+            try {
+                var file = new File([blob], filename, { type: blob.type });
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    await navigator.share({ files: [file], title: filename });
+                    toast('ส่งรูปภาพไปยังแอปที่เลือกแล้ว', 'success');
+                    return;
+                }
+            } catch (e) {
+                if (e && e.name === 'AbortError') return; // ผู้ใช้กดยกเลิกเมนูแชร์เอง
+            }
+
+            saveBlobToDevice(blob, filename);
+            toast('ดาวน์โหลดรูปภาพแล้ว: ' + filename, 'success');
+        };
 
         /* ฟังก์ชันลบรูปภาพเฉพาะรูปที่กำลังดูอยู่ใน Lightbox ป๊อปอัพพรีวิว */
         window.deleteCurrentLBPhoto = function() {
