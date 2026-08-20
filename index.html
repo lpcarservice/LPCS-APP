@@ -23,7 +23,10 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <script src="config.js?v=2.1"></script>
+    <script src="config.js?v=2.3"></script>
+    <!-- ไลบรารีสำหรับสร้างใบรายงานผลการซ่อมเป็นไฟล์ PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         * { font-family: 'Prompt', sans-serif; -webkit-tap-highlight-color: transparent; }
         
@@ -159,7 +162,7 @@
                 </button>
             </div>
             <p class="text-[10px] md:text-[11px] text-slate-400 font-medium">เฉพาะเจ้าหน้าที่และช่างซ่อมภายในอู่เท่านั้น</p>
-            <p class="text-[10px] text-slate-500 font-bold tracking-wider" id="app-version">v2.2 — ตรวจรหัสที่เซิร์ฟเวอร์</p>
+            <p class="text-[10px] text-slate-500 font-bold tracking-wider" id="app-version">v2.3 — ใบรายงานซ่อม PDF</p>
         </div>
     </div>
 
@@ -470,10 +473,16 @@
 
             <!-- Modal Footer Buttons -->
             <div class="p-3.5 bg-slate-50 border-t border-slate-200 flex items-center justify-between flex-wrap gap-2">
-                <button type="button" id="d-print-btn" class="btn-3d bg-slate-800 hover:bg-slate-900 text-white font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-1.5">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
-                    พิมพ์ใบแจ้งซ่อม
-                </button>
+                <div class="flex items-center gap-2 flex-wrap">
+                    <button type="button" id="d-print-btn" class="btn-3d bg-slate-800 hover:bg-slate-900 text-white font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-1.5">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                        พิมพ์ใบแจ้งซ่อม
+                    </button>
+                    <button type="button" id="d-report-btn" class="btn-3d bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 shadow-md shadow-emerald-500/30">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                        ใบรายงานซ่อม PDF
+                    </button>
+                </div>
                 <div class="flex items-center gap-2">
                     <button type="button" id="d-delete-btn" class="btn-3d bg-red-50 hover:bg-red-100 text-red-700 font-bold px-4 py-2 rounded-xl text-xs border border-red-200 flex items-center gap-1.5">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
@@ -761,6 +770,9 @@
 
     <!-- ========== PRINT RECEIPT TEMPLATE ========== -->
     <div id="print-area" class="hidden"></div>
+
+    <!-- ========== REPAIR REPORT (A4) — ใช้เรนเดอร์ก่อนแปลงเป็น PDF ========== -->
+    <div id="report-area" class="no-print" style="position:fixed; left:-11000px; top:0; width:794px; background:#ffffff; z-index:-1;"></div>
 
     <!-- ========== JAVASCRIPT ENGINE ========== -->
     <script>
@@ -1623,7 +1635,21 @@
                 return;
             }
             await sendToAppsScript(payload);
+
+            // ซ่อมเสร็จแล้ว → ชวนออกใบรายงานผลการซ่อมให้ลูกค้าทันที
+            if (newStatus === 'ซ่อมเสร็จแล้ว') offerRepairReport(id, plate);
         };
+
+        /* ถามผู้ใช้ว่าจะออกใบรายงานผลการซ่อมเลยไหม (เรียกหลังเปลี่ยนสถานะเป็นซ่อมเสร็จ) */
+        function offerRepairReport(id, plate) {
+            setTimeout(function() {
+                window.customConfirm(
+                    'ออกใบรายงานผลการซ่อม',
+                    'งานซ่อมทะเบียน ' + S(plate) + ' เสร็จเรียบร้อยแล้ว ต้องการดาวน์โหลดใบรายงานผลการซ่อม (PDF) พร้อมรูปภาพงานซ่อมเลยหรือไม่?',
+                    function() { downloadRepairReport(id); }
+                );
+            }, 700);
+        }
 
         window.renderCards = function() {
             var query = S(document.getElementById('search-input').value).toLowerCase().trim();
@@ -1822,6 +1848,9 @@
             var printBtn = document.getElementById('d-print-btn');
             if (printBtn) printBtn.onclick = function(){ printReceipt(item); };
 
+            var repBtn = document.getElementById('d-report-btn');
+            if (repBtn) repBtn.onclick = function(){ downloadRepairReport(id); };
+
             var eBtn = document.getElementById('d-edit-btn');
             if (eBtn) eBtn.onclick = function(){ closeDetail(); openEditModal(id); };
 
@@ -1831,6 +1860,228 @@
             document.getElementById('detail-modal').classList.remove('hidden');
         };
         window.closeDetail = function(){ document.getElementById('detail-modal').classList.add('hidden'); };
+
+        /* =====================================================================
+           📄 ใบรายงานผลการซ่อม (A4) → ดาวน์โหลดเป็นไฟล์ PDF
+           ===================================================================== */
+
+        /* แปลง Blob เป็น data URI เพื่อฝังรูปลงในรายงาน (กัน canvas โดน block เรื่องข้ามโดเมน) */
+        function blobToDataUri(blob) {
+            return new Promise(function(resolve) {
+                var fr = new FileReader();
+                fr.onload = function(){ resolve(fr.result); };
+                fr.onerror = function(){ resolve(''); };
+                fr.readAsDataURL(blob);
+            });
+        }
+
+        /* โหลดรูปงานซ่อมมาเตรียมฝังในรายงาน (จำกัดจำนวนเพื่อให้ไฟล์ไม่ใหญ่เกินไป) */
+        async function loadReportPhotos(urls, max) {
+            var out = [];
+            var limit = Math.min(urls.length, max || 6);
+            for (var i = 0; i < limit; i++) {
+                try {
+                    var blob = await fetchPhotoBlob(urls[i]);
+                    if (blob) {
+                        var uri = await blobToDataUri(blob);
+                        if (uri) out.push(uri);
+                    }
+                } catch (e) { /* รูปนี้โหลดไม่ได้ ข้ามไป */ }
+            }
+            return out;
+        }
+
+        function reportRow(label, value) {
+            return '<tr>'
+                + '<td style="padding:5px 10px; color:#64748b; font-size:12px; white-space:nowrap; vertical-align:top;">' + label + '</td>'
+                + '<td style="padding:5px 10px; color:#0f172a; font-size:12px; font-weight:700; vertical-align:top;">' + (value || '-') + '</td>'
+                + '</tr>';
+        }
+
+        function buildReportHtml(item, photoUris) {
+            var syms = S(item.symptoms).split(/[\n|]/).map(function(s){ return cleanText(s); }).filter(Boolean);
+            var prts = S(item.parts).split(/[\n|]/).map(function(s){ return cleanText(s); }).filter(Boolean);
+            var maxLen = Math.max(syms.length, prts.length, 1);
+
+            var rowsHtml = '';
+            for (var i = 0; i < maxLen; i++) {
+                var bg = (i % 2 === 0) ? '#ffffff' : '#f8fafc';
+                rowsHtml += '<tr style="background:' + bg + ';">'
+                    + '<td style="padding:9px 8px; text-align:center; font-size:12px; color:#475569; border-bottom:1px solid #e2e8f0;">' + (i + 1) + '</td>'
+                    + '<td style="padding:9px 10px; font-size:12px; color:#0f172a; border-bottom:1px solid #e2e8f0;">' + escHtml(syms[i] || '-') + '</td>'
+                    + '<td style="padding:9px 10px; font-size:12px; color:#0f172a; border-bottom:1px solid #e2e8f0;">' + escHtml(prts[i] || '-') + '</td>'
+                    + '</tr>';
+            }
+
+            var photoHtml = '';
+            if (photoUris.length) {
+                photoHtml = '<div style="margin-top:18px;">'
+                    + '<div style="font-size:13px; font-weight:800; color:#0f172a; border-left:4px solid #ea580c; padding-left:8px; margin-bottom:9px;">ภาพประกอบงานซ่อม</div>'
+                    + '<table style="width:100%; border-collapse:separate; border-spacing:7px 7px;"><tr>'
+                    + photoUris.map(function(src, i) {
+                        var br = ((i + 1) % 3 === 0 && i !== photoUris.length - 1) ? '</tr><tr>' : '';
+                        return '<td style="width:33.33%; padding:0;">'
+                            + '<div style="border:1px solid #fed7aa; border-radius:8px; overflow:hidden; background:#f8fafc;">'
+                            + '<img src="' + src + '" style="width:100%; height:135px; object-fit:cover; display:block;">'
+                            + '<div style="font-size:10px; color:#64748b; text-align:center; padding:3px 0; background:#fff7ed;">รูปที่ ' + (i + 1) + '</div>'
+                            + '</div></td>' + br;
+                    }).join('')
+                    + '</tr></table></div>';
+            }
+
+            var dateIn = S(item.dateIn) ? (S(item.dateIn) + ' ' + S(item.timeIn)).trim() : '-';
+            var dateDone = S(item.dateDone) ? (S(item.dateDone) + ' ' + S(item.timeDone)).trim() : '-';
+            var printedAt = new Date().toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' });
+
+            return '<div style="font-family:\'Prompt\',sans-serif; width:794px; padding:36px 40px; background:#fff; color:#0f172a; box-sizing:border-box;">'
+
+                // ---------- หัวกระดาษ ----------
+                + '<div style="display:flex; align-items:center; justify-content:space-between; border-bottom:3px solid #ea580c; padding-bottom:14px;">'
+                + '<div style="display:flex; align-items:center; gap:12px;">'
+                + '<div style="width:58px; height:58px; border-radius:12px; background:#0f172a; display:flex; align-items:center; justify-content:center; color:#fb923c; font-size:17px; font-weight:900;">LP</div>'
+                + '<div>'
+                + '<div style="font-size:22px; font-weight:900; color:#ea580c; line-height:1.2;">LPCAR SERVICE</div>'
+                + '<div style="font-size:11px; color:#64748b;">ศูนย์บริการตรวจเช็ก ซ่อมแซม &amp; อะไหล่รถยนต์</div>'
+                + '</div></div>'
+                + '<div style="text-align:right;">'
+                + '<div style="display:inline-block; background:#16a34a; color:#fff; font-size:11px; font-weight:800; padding:4px 12px; border-radius:999px;">ซ่อมเสร็จเรียบร้อย</div>'
+                + '<div style="font-size:16px; font-weight:900; margin-top:7px;">ใบรายงานผลการซ่อม</div>'
+                + '<div style="font-size:10px; color:#94a3b8; letter-spacing:.5px;">REPAIR COMPLETION REPORT</div>'
+                + '<div style="font-size:11px; color:#64748b; margin-top:4px;">เลขที่: <b style="color:#0f172a;">' + escHtml(S(item.id) || '-') + '</b></div>'
+                + '</div></div>'
+
+                // ---------- ข้อมูลลูกค้า / รถ ----------
+                + '<div style="display:flex; gap:14px; margin-top:16px;">'
+                + '<div style="flex:1; background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:6px 4px;">'
+                + '<div style="font-size:11px; font-weight:800; color:#ea580c; padding:4px 10px;">ข้อมูลลูกค้า</div>'
+                + '<table style="width:100%; border-collapse:collapse;">'
+                + reportRow('ชื่อลูกค้า', escHtml(S(item.customerName)))
+                + reportRow('เบอร์โทรศัพท์', escHtml(formatPhone(item.phone)))
+                + reportRow('วันที่รับรถ', escHtml(dateIn))
+                + reportRow('วันที่ซ่อมเสร็จ', '<span style="color:#16a34a;">' + escHtml(dateDone) + '</span>')
+                + '</table></div>'
+                + '<div style="flex:1; background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:6px 4px;">'
+                + '<div style="font-size:11px; font-weight:800; color:#ea580c; padding:4px 10px;">ข้อมูลรถยนต์</div>'
+                + '<table style="width:100%; border-collapse:collapse;">'
+                + reportRow('ทะเบียนรถ', '<span style="color:#ea580c; font-size:13px;">' + escHtml(S(item.licensePlate)) + '</span>')
+                + reportRow('ยี่ห้อ / รุ่น', escHtml(S(item.carModel)))
+                + reportRow('เลขไมล์', item.mileage ? escHtml(S(item.mileage)) + ' กม.' : '-')
+                + reportRow('เกียร์ / ขับเคลื่อน', escHtml([S(item.gear), S(item.drive), S(item.bodyType)].filter(Boolean).join(' • ')))
+                + '</table></div>'
+                + '</div>'
+
+                // ---------- ช่างผู้รับผิดชอบ ----------
+                + '<div style="margin-top:12px; background:#fff7ed; border:1px solid #fed7aa; border-radius:10px; padding:9px 14px; font-size:12px;">'
+                + '<b style="color:#9a3412;">ช่างผู้ดูแลงานซ่อม:</b> ' + escHtml(S(item.mechanic) || '-')
+                + (S(item.helper) ? '<span style="color:#64748b;"> &nbsp;|&nbsp; ผู้ช่วยช่าง: </span>' + escHtml(S(item.helper)) : '')
+                + '</div>'
+
+                // ---------- ตารางอาการ / อะไหล่ ----------
+                + '<div style="font-size:13px; font-weight:800; border-left:4px solid #ea580c; padding-left:8px; margin:18px 0 9px;">รายละเอียดอาการเสียและอะไหล่ที่เปลี่ยน</div>'
+                + '<table style="width:100%; border-collapse:collapse; border:1px solid #e2e8f0; border-radius:8px; overflow:hidden;">'
+                + '<thead><tr style="background:#ea580c; color:#fff;">'
+                + '<th style="padding:9px 8px; width:38px; font-size:12px;">#</th>'
+                + '<th style="padding:9px 10px; text-align:left; font-size:12px;">อาการเสีย / งานที่ซ่อม</th>'
+                + '<th style="padding:9px 10px; text-align:left; font-size:12px; width:44%;">รายการอะไหล่ที่เปลี่ยน</th>'
+                + '</tr></thead><tbody>' + rowsHtml + '</tbody></table>'
+                + (S(item.quantity) ? '<div style="font-size:11px; color:#64748b; margin-top:6px;">จำนวนอะไหล่รวม: <b style="color:#0f172a;">' + escHtml(S(item.quantity)) + '</b></div>' : '')
+
+                // ---------- หมายเหตุ ----------
+                + (S(item.notes)
+                    ? '<div style="margin-top:14px; background:#fffbeb; border:1px solid #fde68a; border-left:4px solid #f59e0b; border-radius:8px; padding:10px 14px; font-size:12px;">'
+                      + '<b style="color:#92400e;">หมายเหตุจากช่าง:</b> ' + escHtml(S(item.notes)) + '</div>'
+                    : '')
+
+                // ---------- รูปภาพ ----------
+                + photoHtml
+
+                // ---------- ลายเซ็น ----------
+                + '<table style="width:100%; margin-top:34px; border-collapse:collapse;"><tr>'
+                + '<td style="width:50%; text-align:center; font-size:11px; color:#475569; padding:0 24px;">'
+                + '<div style="border-bottom:1px dotted #94a3b8; height:34px;"></div>'
+                + '<div style="margin-top:6px;">ช่างผู้ตรวจสอบ / ส่งมอบงาน</div>'
+                + '<div style="color:#94a3b8; margin-top:2px;">วันที่ ......... / ......... / .........</div></td>'
+                + '<td style="width:50%; text-align:center; font-size:11px; color:#475569; padding:0 24px;">'
+                + '<div style="border-bottom:1px dotted #94a3b8; height:34px;"></div>'
+                + '<div style="margin-top:6px;">ลูกค้าผู้รับรถ</div>'
+                + '<div style="color:#94a3b8; margin-top:2px;">วันที่ ......... / ......... / .........</div></td>'
+                + '</tr></table>'
+
+                // ---------- ท้ายกระดาษ ----------
+                + '<div style="margin-top:22px; border-top:1px solid #e2e8f0; padding-top:9px; display:flex; justify-content:space-between; font-size:10px; color:#94a3b8;">'
+                + '<span>เอกสารนี้ออกโดยระบบ LPCAR APP</span>'
+                + '<span>พิมพ์เมื่อ ' + escHtml(printedAt) + '</span>'
+                + '</div>'
+
+                + '</div>';
+        }
+
+        window.downloadRepairReport = async function(id) {
+            var item = uniqueCarList.find(function(i){ return S(i.id) === S(id) || S(i.licensePlate) === S(id); });
+            if (!item) { toast('ไม่พบข้อมูลรถคันนี้', 'error'); return; }
+
+            if (typeof html2canvas === 'undefined' || !window.jspdf) {
+                toast('ยังโหลดตัวสร้าง PDF ไม่เสร็จ กรุณาเช็กอินเทอร์เน็ตแล้วลองใหม่', 'error');
+                return;
+            }
+
+            var area = document.getElementById('report-area');
+            if (!area) return;
+
+            toast('กำลังสร้างใบรายงานผลการซ่อม...', 'info');
+
+            try {
+                var urls = splitPhotoUrls(S(item.photo));
+                var photoUris = urls.length ? await loadReportPhotos(urls, 6) : [];
+
+                area.innerHTML = buildReportHtml(item, photoUris);
+                await new Promise(function(r){ setTimeout(r, 350); }); // รอฟอนต์ไทยและรูปเรนเดอร์ให้ครบก่อน
+
+                var canvas = await html2canvas(area.firstChild, {
+                    scale: 2,
+                    backgroundColor: '#ffffff',
+                    useCORS: true,
+                    logging: false
+                });
+
+                var imgData = canvas.toDataURL('image/jpeg', 0.92);
+                var pdf = new window.jspdf.jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+                var pageW = 210, pageH = 297;
+                var imgH = canvas.height * pageW / canvas.width;
+
+                pdf.addImage(imgData, 'JPEG', 0, 0, pageW, imgH);
+                var heightLeft = imgH - pageH;
+                while (heightLeft > 0) {
+                    pdf.addPage();
+                    pdf.addImage(imgData, 'JPEG', 0, -(imgH - heightLeft), pageW, imgH);
+                    heightLeft -= pageH;
+                }
+
+                var plate = S(item.licensePlate).replace(/[\\/:*?"<>|\s]+/g, '') || 'ไม่ระบุทะเบียน';
+                var filename = 'ใบรายงานซ่อม_' + plate + '.pdf';
+                var blob = pdf.output('blob');
+
+                // มือถือ: ใช้เมนูแชร์ของเครื่อง จะบันทึกลงไฟล์หรือส่งให้ลูกค้าทาง LINE ได้ทันที
+                try {
+                    var file = new File([blob], filename, { type: 'application/pdf' });
+                    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                        await navigator.share({ files: [file], title: filename });
+                        toast('ส่งใบรายงานไปยังแอปที่เลือกแล้ว', 'success');
+                        area.innerHTML = '';
+                        return;
+                    }
+                } catch (e) {
+                    if (e && e.name === 'AbortError') { area.innerHTML = ''; return; }
+                }
+
+                saveBlobToDevice(blob, filename);
+                toast('ดาวน์โหลดใบรายงานแล้ว: ' + filename, 'success');
+            } catch (err) {
+                toast('สร้าง PDF ไม่สำเร็จ: ' + S(err.message), 'error');
+            } finally {
+                area.innerHTML = '';
+            }
+        };
 
         function printReceipt(item) {
             var pArea = document.getElementById('print-area');
@@ -2618,10 +2869,11 @@
             });
 
             var joinedPhotos = currentPhotos.join('|||');
+            var prevStatus = idx !== -1 ? S(uniqueCarList[idx].status) : '';
 
             if (idx !== -1) {
-                uniqueCarList[idx] = { 
-                    ...uniqueCarList[idx], 
+                uniqueCarList[idx] = {
+                    ...uniqueCarList[idx],
                     ...payload,
                     photo: joinedPhotos,
                     isPendingSync: true,
@@ -2650,10 +2902,15 @@
 
             showUploadProgress(100, 'อัปเดตสำเร็จ 100%!', 'เสร็จสมบูรณ์');
 
-            setTimeout(function() { 
+            setTimeout(function() {
                 closeUploadProgress();
                 toast('อัปเดตข้อมูลและลิงก์รูปภาพสำเร็จ 100%', 'success');
-                busy = false; 
+                busy = false;
+
+                // เพิ่งเปลี่ยนสถานะเป็น "ซ่อมเสร็จแล้ว" → ชวนออกใบรายงานผลการซ่อม
+                if (payload.status === 'ซ่อมเสร็จแล้ว' && prevStatus !== 'ซ่อมเสร็จแล้ว') {
+                    offerRepairReport(payload.id || plateVal, plateVal);
+                }
             }, 1200);
         };
 
