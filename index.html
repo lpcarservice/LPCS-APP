@@ -162,7 +162,7 @@
                 </button>
             </div>
             <p class="text-[10px] md:text-[11px] text-slate-400 font-medium">เฉพาะเจ้าหน้าที่และช่างซ่อมภายในอู่เท่านั้น</p>
-            <p class="text-[10px] text-slate-500 font-bold tracking-wider" id="app-version">v2.4 — ใบรายงานซ่อม PDF หลายหน้า</p>
+            <p class="text-[10px] text-slate-500 font-bold tracking-wider" id="app-version">v2.5 — ใบรายงานซ่อม PDF หลายหน้า</p>
         </div>
     </div>
 
@@ -1923,10 +1923,10 @@
         /* หัวกระดาษ (ใช้ทุกหน้า) */
         function reportHeader(item, logoUri, subtitle) {
             var logoBox = logoUri
-                ? '<div style="width:60px; height:60px; border-radius:12px; background:#0f172a; border:2px solid #fb923c; overflow:hidden; text-align:center; line-height:0;">'
+                ? '<div style="width:60px; height:60px; border-radius:12px; background:#ffffff; border:2px solid #fb923c; overflow:hidden; text-align:center; line-height:0;">'
                   + '<img src="' + logoUri + '" width="60" height="60" style="width:60px; height:60px; display:block;">'
                   + '</div>'
-                : '<div style="width:60px; height:60px; border-radius:12px; background:#0f172a; color:#fb923c; font-size:17px; font-weight:900; text-align:center; line-height:60px;">LP</div>';
+                : '<div style="width:60px; height:60px; border-radius:12px; background:#ffffff; border:2px solid #fb923c; color:#ea580c; font-size:17px; font-weight:900; text-align:center; line-height:60px;">LP</div>';
 
             return '<table style="width:100%; border-collapse:collapse; border-bottom:3px solid #ea580c;"><tr>'
                 + '<td style="padding:0 0 13px 0; vertical-align:middle;">'
